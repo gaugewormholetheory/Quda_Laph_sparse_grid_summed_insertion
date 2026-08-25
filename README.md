@@ -1,3 +1,27 @@
+# quda_laph_sparse_grid_summed_insertion
+This is a modified version of quda_laph, it includes the possiblity to compute sparse_grid perambulators, 
+which was originally implemented by John Bulava, and also the possibility to compute insertion perambulators
+and their respective sparse_grid projected versions.
+
+Modified files:
+* source/task_quark_perambulators.cc
+* source/perambulator_handler.h
+* source/perambulator_handler.cc
+* source/field_ops.cc
+* source/field_ops.h
+* source/filelist_info.h 
+* source/filelist_info.cc
+* source/CMakeLists.txt
+
+New files:
+* source/sparse_grid.h
+* source/insertion_info.h
+* source/insertion_info.cc
+
+Although there is the possiblity to apply the insertion-operator on the host, this is extremely slow.
+By default, this version is designed for a modified version of Quda, which can be found at the following link:
+'https://gitlab.ruhr-uni-bochum.de/Schreiber/quda-tbci.git'
+
 # quda_laph
 Lattice QCD computations with stochastic Laph and distillation using the QUDA library.
 
