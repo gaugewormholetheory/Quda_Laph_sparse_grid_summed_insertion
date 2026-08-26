@@ -17,6 +17,9 @@ New files:
 * source/sparse_grid.h
 * source/insertion_info.h
 * source/insertion_info.cc
+* aux/input_perambulators_sparse_grid_and_insertion_X252.xml
+* aux/input_perambulators_sparse_grid_and_insertion_YMtest.xml-merge
+* aux/input_perambulators_sparse_grid_and_insertion_YMtest.xml-check
 
 Although there is the possiblity to apply the insertion-operator on the host, this is extremely slow.
 By default, this version is designed for a modified version of Quda, which can be found at the following link:
