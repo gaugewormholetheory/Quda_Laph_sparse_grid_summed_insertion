@@ -1,6 +1,7 @@
 #include "tasks.h"
 #include "perambulator_handler.h"
 #include "stop_watch.h"
+#include <map>
 
 using namespace std;
 
@@ -144,47 +145,56 @@ void doLaphQuarkPerambulators(XMLHandler& xmltask)
  string smeared_quark_filestub;
  xmlreadif(xmlr,"SmearedQuarkFileStub",smeared_quark_filestub,"LAPH_QUARK_PERAMBULATORS");
  QuarkActionInfo quark(xmlr);
- 
- bool sparse_grid = true; 
- if (xml_tag_count(xmlr,"RandomSparseGridInfo")!=1)
-	 sparse_grid = false; 
- if (sparse_grid){
-	 XMLHandler xml_temp(xmlr,"RandomSparseGridInfo");
-	 if (xml_tag_count(xml_temp,"FileListInfo")==0)
-	 errorLaph("If RandomSparseGridInfo is specified, must have at least one FileListInfo tags.");}
- if (sparse_grid) 
-	 printLaph("Sparse grid output enabled.");
- else 
-	 printLaph("Sparse grid output disabled.");
 
- bool peramb_insertion = true;
- if (xml_tag_count(xmlr,"InsertionInfo")!=1)
-	 peramb_insertion = false;
- if (peramb_insertion){
-	 XMLHandler xml_temp(xmlr,"InsertionInfo");
-         if (xml_tag_count(xml_temp,"FileListInfo")==0)
-         errorLaph("If InsertionInfo is specified, must have at least one FileListInfo tags.");}
- if (peramb_insertion) 
-	 printLaph("Insertion output enabled.");
- else 
-	 printLaph("Insertion output disabled.");
+ std::map<PerambulatorHandler::PerambulatorType, FileListInfo> Perambulators;
+ bool sparse_grid_type = false;
+ bool insertion_type = false;
+ bool sparse_grid_insertion_type; = false;
+ if (xml_tag_count(xmlr,"Perambulators")!=1){
+	 errorLaph("Exactly one <Perambulators> list needs to be specified.");}
+ XMLHandler xml_per(xmlr,"Perambulators");
+ std::list<XMLHandler> entries = xml_per.find_among_children("Perambulator");
+ if (entries.empty()){
+     errorLaph("The <Perambulators> list must contain at least one <Perambulator> specifying a type.");}
+ for (XMLHandler& entry : entries){
+	 xmlread(entry,"Type",type_name,"Perambulator");
+     PerambulatorHandler::PerambulatorType perambulator_type
+         = PerambulatorHandler::toPerambulatorType(type_name);
+     if (perambulator_type == PerambulatorHandler::PERAMBULATOR_INVALID_ENUM){
+      	 errorLaph("Unknown perambulator type: '" + type_name + "' was provided");}
+   	 FileListInfo files_entry(entry);
+   	 if (!Perambulators.emplace(perambulator_type,files_entry).second){
+    	 errorLaph("The provided perambulator types need to be unique.");}
+ }
+ if (Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID)){
+	 if (xml_tag_count(xmlr,"RandomSparseGridInfo")!=1)
+	 	 errorLaph("If perambulators of sparse grid type were chosen, input must include RandomSparseGridInfo.");
+	 sparse_grid_type = true;
+ }
+ if (Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_INSERTION)||
+ 	Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_RIGHT_INSERTION)||
+	Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_SUMMED_INSERTION)){
+	 if (xml_tag_count(xmlr,"InsertionInfo")!=1)
+	 	 errorLaph("If perambulators of insertion type were chosen, input must include InsertionInfo.");
+	 insertion_type = true;
+ }
+ if (Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION)||
+	Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION)){
+	 if (xml_tag_count(xmlr,"InsertionInfo")!=1)
+	 	 errorLaph("If perambulators of sparse grid insertion type were chosen, 
+			input must include RandomSparseGridInfo and InsertionInfo.");
+	 sparse_grid_insertion_type = true;
+ }
+ if  ((Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_RIGHT_INSERTION)||
+ 	Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION))&&
+	(Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_STANDARD)||
+	Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID)||
+	Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_INSERTION)||
+	Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_SUMMED_INSERTION)||
+	Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION))){
+	 errorLaph("Only those types of perambulators may be selected whose computations are based on the same source."); 
+ }
 
- bool sparse_grid_with_peramb_insertion = false;
- if ((sparse_grid)&&(peramb_insertion))
-	 sparse_grid_with_peramb_insertion = true;
- if (sparse_grid_with_peramb_insertion){
-	 XMLHandler xml_temp1(xmlr,"RandomSparseGridInfo");
-         XMLHandler xml_temp2(xmlr,"InsertionInfo");
-         if ((xml_tag_count(xml_temp1,"FileListInfo")!=2)&&(xml_tag_count(xml_temp2,"FileListInfo")!=2)){
-	 	printLaph("Although both sparse grid and insertion output enabled, insufficient FileListInfo tags for combined output provided.");
-	 	sparse_grid_with_peramb_insertion = false;}
- 	}
- if (sparse_grid_with_peramb_insertion) 
-	 printLaph("Sparse grid projected insertion output enabled.");
- else 
-	 printLaph("Sparse grid projected insertion output disabled.");
- 
- FileListInfo files(xmlr,"FileListInfo");
  InverterInfo invinfo(xmlr);
  bool upper_spin_only=false;
  if (xml_tag_count(xmlr,"UpperSpinComponentsOnly")>0){
@@ -229,41 +239,28 @@ void doLaphQuarkPerambulators(XMLHandler& xmltask)
  PerambulatorHandler Q;
  InsertionInfo insertion; 
  if ((sparse_grid)&&(!peramb_insertion)){
-         XMLHandler xmlr_sg(xmlr,"RandomSparseGridInfo");	 
-	 FileListInfo gridFiles(xmlr_sg,"FileListInfo");
+     XMLHandler xmlr_sg(xmlr,"RandomSparseGridInfo");
 	 RandomSparseGrid sGrid(xmlr_sg);  
 	 printLaph(make_strf("\n\nSparse Grid:\n%s\n",sGrid.output()));
-	 Q.setInfo(gaugeinfo,gSmear,qSmear,quark,sGrid,files,gridFiles,
+	 Q.setInfo(gaugeinfo,gSmear,qSmear,quark,sGrid,Perambulators,
                        smeared_quark_filestub,upper_spin_only,mode);
  }  else if ((!sparse_grid)&&(peramb_insertion)) {
-         XMLHandler xmlr_ins(xmlr,"InsertionInfo");	 
-	 FileListInfo insertionFiles(xmlr_ins,"FileListInfo");
-	 insertion = InsertionInfo(xmlr);
+     XMLHandler xmlr_ins(xmlr,"InsertionInfo");
+	 insertion = InsertionInfo(xmlr_ins);
 	 printLaph(make_strf("\n\nInsertion:\n%s\n",insertion.output()));
-	 Q.setInfo(gaugeinfo,gSmear,qSmear,quark,insertion,files,insertionFiles,
+	 Q.setInfo(gaugeinfo,gSmear,qSmear,quark,insertion,Perambulators,
                        smeared_quark_filestub,upper_spin_only,mode);
  }  else if (sparse_grid_with_peramb_insertion) {
-         XMLHandler xmlr_sg(xmlr,"RandomSparseGridInfo");  
-	 list<XMLHandler> flxmls_grid(xmlr_sg.find_among_children("FileListInfo")); 
-	 FileListInfo gridFiles(flxmls_grid.front());
+     XMLHandler xmlr_sg(xmlr,"RandomSparseGridInfo");
 	 RandomSparseGrid sGrid(xmlr_sg);  
 	 printLaph(make_strf("\n\nSparse Grid:\n%s\n",sGrid.output()));
-	 XMLHandler xmlr_ins(xmlr,"InsertionInfo"); 
-	 list<XMLHandler> flxmls_insertion(xmlr_ins.find_among_children("FileListInfo")); 
-	 FileListInfo insertionFiles(flxmls_insertion.front());
+	 XMLHandler xmlr_ins(xmlr,"InsertionInfo");
 	 insertion = InsertionInfo(xmlr_ins);  
 	 printLaph(make_strf("\n\nInsertion:\n%s\n",insertion.output()));
-	 if (flxmls_grid.size()==2) {
-		 FileListInfo gridinsertionFiles(flxmls_grid.back());
-		 Q.setInfo(gaugeinfo,gSmear,qSmear,quark,sGrid,insertion,files,gridFiles,insertionFiles,gridinsertionFiles,
+	 Q.setInfo(gaugeinfo,gSmear,qSmear,quark,sGrid,insertion,Perambulators,
                        smeared_quark_filestub,upper_spin_only,mode);
-	 }  else {
-		 FileListInfo gridinsertionFiles(flxmls_insertion.back());
-		 Q.setInfo(gaugeinfo,gSmear,qSmear,quark,sGrid,insertion,files,gridFiles,insertionFiles,gridinsertionFiles,
-                       smeared_quark_filestub,upper_spin_only,mode);
-	 }
  }  else { 
-	 Q.setInfo(gaugeinfo,gSmear,qSmear,quark,files,smeared_quark_filestub,
+	 Q.setInfo(gaugeinfo,gSmear,qSmear,Perambulators,files,smeared_quark_filestub,
 			 upper_spin_only,mode);
  }
  // read the set of computations (time sources, src eigvec indices)
@@ -379,46 +376,56 @@ void doLaphCheckPerambulators(XMLHandler& xmltask)
  GluonSmearingInfo gSmear(xmlr);
  QuarkSmearingInfo qSmear(xmlr);
  QuarkActionInfo quark(xmlr);
- bool sparse_grid = true;
- if (xml_tag_count(xmlr,"RandomSparseGridInfo")!=1)
-         sparse_grid = false;
- if (sparse_grid){
-         XMLHandler xml_temp(xmlr,"RandomSparseGridInfo");
-         if (xml_tag_count(xml_temp,"FileListInfo")==0)
-         errorLaph("If RandomSparseGridInfo is specified, must have at least one FileListInfo tags.");}
-  if (sparse_grid)
-         printLaph("Sparse grid check enabled.");
-  else
-         printLaph("Sparse grid check disabled.");
+ 
+ std::map<PerambulatorHandler::PerambulatorType, FileListInfo> Perambulators;
+ bool sparse_grid_type = false;
+ bool insertion_type = false;
+ bool sparse_grid_insertion_type; = false;
+ if (xml_tag_count(xmlr,"Perambulators")!=1){
+	 errorLaph("Exactly one <Perambulators> list needs to be specified.");}
+ XMLHandler xml_per(xmlr,"Perambulators");
+ std::list<XMLHandler> entries = xml_per.find_among_children("Perambulator");
+ if (entries.empty()){
+     errorLaph("The <Perambulators> list must contain at least one <Perambulator> specifying a type.");}
+ for (XMLHandler& entry : entries){
+	 xmlread(entry,"Type",type_name,"Perambulator");
+     PerambulatorHandler::PerambulatorType perambulator_type
+         = PerambulatorHandler::toPerambulatorType(type_name);
+     if (perambulator_type == PerambulatorHandler::PERAMBULATOR_INVALID_ENUM){
+      	 errorLaph("Unknown perambulator type: '" + type_name + "' was provided");}
+   	 FileListInfo files_entry(entry);
+   	 if (!Perambulators.emplace(perambulator_type,files_entry).second){
+    	 errorLaph("The provided perambulator types need to be unique.");}
+ }
+ if (Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID)){
+	 if (xml_tag_count(xmlr,"RandomSparseGridInfo")!=1)
+	 	 errorLaph("If perambulators of sparse grid type were chosen, input must include RandomSparseGridInfo.");
+	 sparse_grid_type = true;
+ }
+ if (Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_INSERTION)||
+ 	Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_RIGHT_INSERTION)||
+	Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_SUMMED_INSERTION)){
+	 if (xml_tag_count(xmlr,"InsertionInfo")!=1)
+	 	 errorLaph("If perambulators of insertion type were chosen, input must include InsertionInfo.");
+	 insertion_type = true;
+ }
+ if (Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION)||
+	Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION)){
+	 if (xml_tag_count(xmlr,"InsertionInfo")!=1)
+	 	 errorLaph("If perambulators of sparse grid insertion type were chosen, 
+			input must include RandomSparseGridInfo and InsertionInfo.");
+	 sparse_grid_insertion_type = true;
+ }
+ if  ((Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_RIGHT_INSERTION)||
+ 	Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION))&&
+	(Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_STANDARD)||
+	Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID)||
+	Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_INSERTION)||
+	Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_SUMMED_INSERTION)||
+	Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION))){
+	 errorLaph("Only those types of perambulators may be selected whose computations are based on the same source."); 
+ }
 
- bool peramb_insertion = true;
- if (xml_tag_count(xmlr,"InsertionInfo")!=1)
-         peramb_insertion = false;
- if (peramb_insertion){
-         XMLHandler xml_temp(xmlr,"InsertionInfo");
-         if (xml_tag_count(xml_temp,"FileListInfo")==0)
-         errorLaph("If InsertionInfo is specified, must have at least one FileListInfo tags.");}
- if (peramb_insertion)
-         printLaph("Insertion check enabled.");
- else
-         printLaph("Insertion check disabled.");
-
- bool sparse_grid_with_peramb_insertion = false;
- if ((sparse_grid)&&(peramb_insertion))
-         sparse_grid_with_peramb_insertion = true;
- if (sparse_grid_with_peramb_insertion){
-         XMLHandler xml_temp1(xmlr,"RandomSparseGridInfo");
-         XMLHandler xml_temp2(xmlr,"InsertionInfo");
-         if ((xml_tag_count(xml_temp1,"FileListInfo")!=2)&&(xml_tag_count(xml_temp2,"FileListInfo")!=2)){
-         printLaph("Although both sparse grid and insertion specified, insufficient FileListInfo tags for combination provided.");
-         sparse_grid_with_peramb_insertion = false;}}
- if (sparse_grid_with_peramb_insertion)
-         printLaph("Sparse grid projected insertion check enabled.");
- else
-         printLaph("Sparse grid projected insertion check disabled.");
-
-
- FileListInfo files(xmlr,"FileListInfo");
  InverterInfo invinfo(xmlr);
  bool upper_spin_only=false;
  if (xml_tag_count(xmlr,"UpperSpinComponentsOnly")>0){
@@ -450,41 +457,28 @@ void doLaphCheckPerambulators(XMLHandler& xmltask)
  PerambulatorHandler Q;
  InsertionInfo insertion;
  if ((sparse_grid)&&(!peramb_insertion)){
-         XMLHandler xmlr_sg(xmlr,"RandomSparseGridInfo");
-         FileListInfo gridFiles(xmlr_sg,"FileListInfo");
+         XMLHandler xmlr_sg(xmlr,"RandomSparseGridInfo")
          RandomSparseGrid sGrid(xmlr_sg);
          printLaph(make_strf("\n\nSparse Grid:\n%s\n",sGrid.output()));
-         Q.setInfo(gaugeinfo,gSmear,qSmear,quark,sGrid,files,gridFiles,
+         Q.setInfo(gaugeinfo,gSmear,qSmear,quark,sGrid,Perambulators,
                        "",upper_spin_only,mode);
  }  else if ((!sparse_grid)&&(peramb_insertion)) {
          XMLHandler xmlr_ins(xmlr,"InsertionInfo");
-         FileListInfo insertionFiles(xmlr_ins,"FileListInfo");
          insertion = InsertionInfo(xmlr);
          printLaph(make_strf("\n\nInsertion:\n%s\n",insertion.output()));
-         Q.setInfo(gaugeinfo,gSmear,qSmear,quark,insertion,files,insertionFiles,
+         Q.setInfo(gaugeinfo,gSmear,qSmear,quark,insertion,Perambulators,
                        "",upper_spin_only,mode);
  }  else if (sparse_grid_with_peramb_insertion) {
          XMLHandler xmlr_sg(xmlr,"RandomSparseGridInfo");
-         list<XMLHandler> flxmls_grid(xmlr_sg.find_among_children("FileListInfo"));
-         FileListInfo gridFiles(flxmls_grid.front());
          RandomSparseGrid sGrid(xmlr_sg);
          printLaph(make_strf("\n\nSparse Grid:\n%s\n",sGrid.output()));
          XMLHandler xmlr_ins(xmlr,"InsertionInfo");
-         list<XMLHandler> flxmls_insertion(xmlr_ins.find_among_children("FileListInfo"));
-         FileListInfo insertionFiles(flxmls_insertion.front());
          insertion = InsertionInfo(xmlr_ins);
          printLaph(make_strf("\n\nInsertion:\n%s\n",insertion.output()));
-         if (flxmls_grid.size()==2) {
-                 FileListInfo gridinsertionFiles(flxmls_grid.back());
-                 Q.setInfo(gaugeinfo,gSmear,qSmear,quark,sGrid,insertion,files,gridFiles,insertionFiles,gridinsertionFiles,
+         Q.setInfo(gaugeinfo,gSmear,qSmear,quark,sGrid,insertion,Perambulators,
                        "",upper_spin_only,mode);
-         }  else {
-                 FileListInfo gridinsertionFiles(flxmls_insertion.back());
-                 Q.setInfo(gaugeinfo,gSmear,qSmear,quark,sGrid,insertion,files,gridFiles,insertionFiles,gridinsertionFiles,
-                       "",upper_spin_only,mode);
-         }
  }  else {
-         Q.setInfo(gaugeinfo,gSmear,qSmear,quark,files,"",
+         Q.setInfo(gaugeinfo,gSmear,qSmear,quark,Perambulators,"",
                          upper_spin_only,mode);
  }
 // read the set of computations (time sources, src eigvec indices)
@@ -616,41 +610,64 @@ void doLaphMergePerambulators(XMLHandler& xmltask)
 	GluonSmearingInfo gSmear(xmlr);
 	QuarkSmearingInfo qSmear(xmlr);
 	QuarkActionInfo quark(xmlr);
-	bool sparse_grid = true;
-	if (xml_tag_count(xmlr,"RandomSparseGridInfo")!=1)
-       		 sparse_grid = false;
-	if (sparse_grid){
-        	 XMLHandler xml_temp(xmlr,"RandomSparseGridInfo");
-        	 if (xml_tag_count(xml_temp,"FileListInfo")==0)
-         	 	errorLaph("If RandomSparseGridInfo is specified, must have at least one FileListInfo tags.");
-		 if (xml_tag_count(xml_temp,"InputFileListInfos")==0)
-                        errorLaph("If RandomSparseGridInfo is specified, must have at least one InputFileListInfo tags.");}
 
-	bool peramb_insertion = true;
- 	if (xml_tag_count(xmlr,"InsertionInfo")!=1)
-        	 peramb_insertion = false;
- 	if (peramb_insertion){
-        	 XMLHandler xml_temp(xmlr,"InsertionInfo");
-        	 if (xml_tag_count(xml_temp,"FileListInfo")==0)
-         		 errorLaph("If InsertionInfo is specified, must have at least one FileListInfo tags.");
-	 	 if (xml_tag_count(xml_temp,"InputFileListInfos")==0)
-                         errorLaph("If InsertionInfo is specified, must have at least one InputFileListInfo tags.");}
+	std::map<PerambulatorHandler::PerambulatorType, FileListInfo> Perambulators;
+	std::map<PerambulatorHandler::PerambulatorType, std::list<FileListInfo> > InputPerambulators;
+	bool sparse_grid_type = false;
+ 	bool insertion_type = false;
+ 	bool sparse_grid_insertion_type; = false;
+ 	if (xml_tag_count(xmlr,"Perambulators")!=1){
+	 	errorLaph("Exactly one <Perambulators> list needs to be specified.");}
+ 	XMLHandler xml_per(xmlr,"Perambulators");
+ 	std::list<XMLHandler> entries = xml_per.find_among_children("Perambulator");
+ 	if (entries.empty()){
+     	errorLaph("The <Perambulators> list must contain at least one <Perambulator> specifying a type.");}
+ 	for (XMLHandler& entry : entries){
+	 	xmlread(entry,"Type",type_name,"Perambulator");
+     	PerambulatorHandler::PerambulatorType perambulator_type
+         	= PerambulatorHandler::toPerambulatorType(type_name);
+     	if (perambulator_type == PerambulatorHandler::PERAMBULATOR_INVALID_ENUM){
+      	 	errorLaph("Unknown perambulator type: '" + type_name + "' was provided");}
+   	 	FileListInfo files_entry(entry);
+   	 	if (!Perambulators.emplace(perambulator_type,files_entry).second){
+    	 	errorLaph("The provided perambulator types need to be unique.");}
+		XMLHandler entry_infs(entry,"InputFileListInfos");
+		std::list<XMLHandler> entry_infs.find_among_children("FileListInfo");
+		list<FileListInfo> infs;
+		for (list<XMLHandler>::iterator it=entry_infs.begin();it!=entry_infs.end();++it)
+                 infs.push_back(FileListInfo(*it));
+		if (!InputPerambulators.emplace(perambulator_type,infs).second){
+    	 	errorLaph("The provided perambulator types need to be unique.");}
+ 	}
+ 	if (Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID)){
+	 	if (xml_tag_count(xmlr,"RandomSparseGridInfo")!=1)
+	 	 	errorLaph("If perambulators of sparse grid type were chosen, input must include RandomSparseGridInfo.");
+	 	sparse_grid_type = true;
+ 	}
+ 	if (Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_INSERTION)||
+ 		Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_RIGHT_INSERTION)||
+		Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_SUMMED_INSERTION)){
+	 	if (xml_tag_count(xmlr,"InsertionInfo")!=1)
+	 	 	errorLaph("If perambulators of insertion type were chosen, input must include InsertionInfo.");
+	 	insertion_type = true;
+ 	}
+ 	if (Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION)||
+		Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION)){
+	 	if (xml_tag_count(xmlr,"InsertionInfo")!=1)
+	 	 	errorLaph("If perambulators of sparse grid insertion type were chosen, 
+				input must include RandomSparseGridInfo and InsertionInfo.");
+	 	sparse_grid_insertion_type = true;
+ 	}
+ 	if  ((Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_RIGHT_INSERTION)||
+ 		Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION))&&
+		(Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_STANDARD)||
+		Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID)||
+		Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_INSERTION)||
+		Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_SUMMED_INSERTION)||
+		Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION))){
+	 	errorLaph("Only those types of perambulators may be selected whose computations are based on the same source."); 
+ 	}
 
- 	bool sparse_grid_with_peramb_insertion = false;
- 	if ((sparse_grid)&&(peramb_insertion))
-        	 sparse_grid_with_peramb_insertion = true;
-	if (sparse_grid_with_peramb_insertion){
-        	 XMLHandler xml_temp1(xmlr,"RandomSparseGridInfo");
-        	 XMLHandler xml_temp2(xmlr,"InsertionInfo");
-        	 if ((xml_tag_count(xml_temp1,"FileListInfo")!=2)&&(xml_tag_count(xml_temp2,"FileListInfo")!=2)){
-        	 	printLaph("Although both sparse grid and insertion specified, insufficient FileListInfo tags for combination provided.");
-        	 	sparse_grid_with_peramb_insertion = false;}
-		 if ((xml_tag_count(xml_temp1,"InputFileListInfos")!=2)&&(xml_tag_count(xml_temp2,"InputFileListInfo")!=2)){
-                        printLaph("Although both sparse grid and insertion specified, insufficient InputFileListInfo tags for combination provided.");
-                        sparse_grid_with_peramb_insertion = false;}
-	}
-
-	FileListInfo files(xmlr,"FileListInfo");
  	InverterInfo invinfo(xmlr);
 	bool upper_spin_only=false;
 	if (xml_tag_count(xmlr,"UpperSpinComponentsOnly")>0){
@@ -672,82 +689,34 @@ void doLaphMergePerambulators(XMLHandler& xmltask)
 	else{
 		printLaph("All spin components used");}
 
-	if (xml_tag_count(xmltask,"InputFileListInfos")!=1){
-		errorLaph("Must have one <InputFileListInfos> tag");}
-
-	XMLHandler xmlinf(xmltask,"InputFileListInfos",true);
-	list<XMLHandler> infxmls=xmlinf.find_among_children("FileListInfo");
-	list<FileListInfo> inflos, inflos_sg, inflos_ins, inflos_sgins;
-	for (list<XMLHandler>::iterator it=infxmls.begin();it!=infxmls.end();++it){
-		inflos.push_back(FileListInfo(*it));
-	}
-
-
-	 // create handler and additional inputfilelists
+	 // create handler
 	 PerambulatorHandler Q;
 	 InsertionInfo insertion;
 	 if ((sparse_grid)&&(!peramb_insertion)){
 	         XMLHandler xmlr_sg(xmlr,"RandomSparseGridInfo");
-	         FileListInfo gridFiles(xmlr_sg,"FileListInfo");
 	         RandomSparseGrid sGrid(xmlr_sg);
 	         printLaph(make_strf("\n\nSparse Grid:\n%s\n",sGrid.output()));
-	         Q.setInfo(gaugeinfo,gSmear,qSmear,quark,sGrid,files,gridFiles,
+	         Q.setInfo(gaugeinfo,gSmear,qSmear,quark,sGrid,Perambulators,
 	                       "",upper_spin_only,mode);
-		 XMLHandler xmlinf_sg(xmlr_sg,"InputFileListInfos");
-                 list<XMLHandler> infxmls_sg=xmlinf_sg.find_among_children("FileListInfo");
-                 for (list<XMLHandler>::iterator it=infxmls_sg.begin();it!=infxmls_sg.end();++it)
-                         inflos_sg.push_back(FileListInfo(*it));
 	 }  else if ((!sparse_grid)&&(peramb_insertion)) {
 	         XMLHandler xmlr_ins(xmlr,"InsertionInfo");
-	         FileListInfo insertionFiles(xmlr_ins,"FileListInfo");
 	         insertion = InsertionInfo(xmlr_ins);
 	         printLaph(make_strf("\n\nInsertion:\n%s\n",insertion.output()));
-	         Q.setInfo(gaugeinfo,gSmear,qSmear,quark,insertion,files,insertionFiles,
+	         Q.setInfo(gaugeinfo,gSmear,qSmear,quark,insertion,Perambulators,
 	                       "",upper_spin_only,mode);
-		 XMLHandler xmlinf_ins(xmlr_ins,"InputFileListInfos");
-                 list<XMLHandler> infxmls_ins=xmlinf_ins.find_among_children("FileListInfo");
-                 for (list<XMLHandler>::iterator it=infxmls_ins.begin();it!=infxmls_ins.end();++it)
-                         inflos_ins.push_back(FileListInfo(*it));
 	 }  else if (sparse_grid_with_peramb_insertion) {
-	         XMLHandler xmlr_sg(xmlr,"RandomSparseGridInfo");
-	         list<XMLHandler> flxmls_grid(xmlr_sg.find_among_children("FileListInfo"));
-	         FileListInfo gridFiles(flxmls_grid.front());
-	         RandomSparseGrid sGrid(xmlr_sg);
-	         printLaph(make_strf("\n\nSparse Grid:\n%s\n",sGrid.output()));
-		 list<XMLHandler> flinfxmls_grid(xmlr_sg.find_among_children("InputFileListInfos"));
-		 list<XMLHandler> infxmls_sg=(flinfxmls_grid.front()).find_among_children("FileListInfo");
-		 list<XMLHandler> infxmls_sgins1=(flinfxmls_grid.back()).find_among_children("FileListInfo");
+	     XMLHandler xmlr_sg(xmlr,"RandomSparseGridInfo");
+	     RandomSparseGrid sGrid(xmlr_sg);
+         printLaph(make_strf("\n\nSparse Grid:\n%s\n",sGrid.output()));
 		 for (list<XMLHandler>::iterator it=infxmls_sg.begin();it!=infxmls_sg.end();++it)
                          inflos_sg.push_back(FileListInfo(*it));
 		 XMLHandler xmlr_ins(xmlr,"InsertionInfo");
-		 list<XMLHandler> flxmls_ins(xmlr_ins.find_among_children("FileListInfo"));
-		 FileListInfo insertionFiles(flxmls_ins.front());
 		 insertion = InsertionInfo(xmlr_ins);
-	         printLaph(make_strf("\n\nInsertion:\n%s\n",insertion.output()));
-		 list<XMLHandler> flinfxmls_insertion(xmlr_ins.find_among_children("InputFileListInfos"));
-		 list<XMLHandler> infxmls_insertion=(flinfxmls_insertion.front()).find_among_children("FileListInfo");
-		 for (list<XMLHandler>::iterator it=infxmls_insertion.begin();it!=infxmls_insertion.end();++it)
-                         inflos_ins.push_back(FileListInfo(*it));
-		 if (flxmls_grid.size()==2) {
-	                 FileListInfo gridinsertionFiles(flxmls_grid.back());
-	                 Q.setInfo(gaugeinfo,gSmear,qSmear,quark,sGrid,insertion,files,gridFiles,insertionFiles,gridinsertionFiles,
-	                       "",upper_spin_only,mode);
-	         }  else {
-	                 FileListInfo gridinsertionFiles(flxmls_ins.back());
-	                 Q.setInfo(gaugeinfo,gSmear,qSmear,quark,sGrid,insertion,files,gridFiles,insertionFiles,gridinsertionFiles,
-	                       "",upper_spin_only,mode);
-	         }
-                 if (flinfxmls_grid.size()==2){
-			 list<XMLHandler> infxmls_sgins=(flinfxmls_grid.back()).find_among_children("FileListInfo");
-                 	 for (list<XMLHandler>::iterator it=infxmls_sgins.begin();it!=infxmls_sgins.end();++it)
-                         	 inflos_sgins.push_back(FileListInfo(*it));
-		}  else { 
-			list<XMLHandler> infxmls_sgins=(flinfxmls_insertion.back()).find_among_children("FileListInfo");
-                        for (list<XMLHandler>::iterator it=infxmls_sgins.begin();it!=infxmls_sgins.end();++it)
-                                inflos_sgins.push_back(FileListInfo(*it));
-		}
+	     printLaph(make_strf("\n\nInsertion:\n%s\n",insertion.output()));
+	     Q.setInfo(gaugeinfo,gSmear,qSmear,quark,sGrid,insertion,Perambulators,
+	         "",upper_spin_only,mode);
 	 }  else {
-	         Q.setInfo(gaugeinfo,gSmear,qSmear,quark,files,"",
+	         Q.setInfo(gaugeinfo,gSmear,qSmear,quark,Perambulators,"",
         	                 upper_spin_only,mode);
 	 }
 
@@ -759,23 +728,28 @@ void doLaphMergePerambulators(XMLHandler& xmltask)
 	//Q.setChecks(xmlchk);
 
 	StopWatch outer; outer.start();
-	for (list<FileListInfo>::iterator it=inflos.begin();it!=inflos.end();++it){
-		Q.mergeData(*it);}
-	if (sparse_grid) { 	
-		for (list<FileListInfo>::iterator it=inflos_sg.begin();it!=inflos_sg.end();++it){
-			Q.mergeDataSparseGrid(*it);
-		}
-	}
-	if (peramb_insertion) {
-                for (list<FileListInfo>::iterator it=inflos_ins.begin();it!=inflos_ins.end();++it){
-                        Q.mergeDataInsertion(*it);
-                }
-        }
-	if (sparse_grid_with_peramb_insertion) {
-                for (list<FileListInfo>::iterator it=inflos_sgins.begin();it!=inflos_sgins.end();++it){
-                        Q.mergeDataSparseGridInsertion(*it);
-                }
-        }
+	auto found_std = InputPerambulators.find(PerambulatorHandler::PerambulatorType::PERAMBULATOR_STANDARD);
+	if (found_std != InputPerambulators.end()){	
+   		for (auto& fl : found_std->second) Q.mergeData(fl);}
+	auto found_sg = InputPerambulators.find(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID);
+	if (found_sg != InputPerambulators.end()){	
+   		for (auto& fl : found_sg->second) Q.mergeDataSparseGrid(fl);}
+	auto found_sins = InputPerambulators.find(PerambulatorHandler::PerambulatorType::PERAMBULATOR_SUMMED_INSERTION);
+	if (found_sins != InputPerambulators.end()){	
+   		for (auto& fl : found_sins->second) Q.mergeDataInsertion(fl);}
+	auto found_lins = InputPerambulators.find(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_INSERTION);
+	if (found_lins != InputPerambulators.end()){	
+   		for (auto& fl : found_lins->second) Q.mergeDataInsertion(fl);}
+	auto found_rins = InputPerambulators.find(PerambulatorHandler::PerambulatorType::PERAMBULATOR_RIGHT_INSERTION);
+	if (found_rins != InputPerambulators.end()){	
+   		for (auto& fl : found_rins->second) Q.mergeDataInsertion(fl);}
+	auto found_sgsins = InputPerambulators.find(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION);
+	if (found_sgsins != InputPerambulators.end()){	
+   		for (auto& fl : found_sgsins->second) Q.mergeDataSparseGridInsertion(fl);}
+	auto found_sgrins = InputPerambulators.find(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION);
+	if (found_sgrins != InputPerambulators.end()){	
+   		for (auto& fl : found_sgrins->second) Q.mergeDataSparseGridInsertion(fl);}
+
 	outer.stop();
 	printLaph(make_strf("LAPH_MERGE_PERAMBULATORS: total time = %g secs",
 				outer.getTimeInSeconds()));

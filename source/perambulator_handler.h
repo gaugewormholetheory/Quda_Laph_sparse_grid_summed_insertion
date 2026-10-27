@@ -8,6 +8,9 @@
 #include "insertion_info.h"
 #include "array.h"
 
+#ifndef LAPH_INVALID_ENUM
+#define LAPH_INVALID_ENUM (-0x7fffffff - 1)
+#endif
 
 namespace LaphEnv {
 
@@ -168,7 +171,16 @@ class PerambulatorHandler {
  public:
 
    enum Mode { ReadOnly, Merge, Compute, Check };
-
+   enum PerambulatorType { PERAMBULATOR_STANDARD,
+               PERAMBULATOR_LEFT_SPARSE_GRID,
+               PERAMBULATOR_LEFT_INSERTION,
+               PERAMBULATOR_RIGHT_INSERTION,
+               PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION,
+               PERAMBULATOR_SUMMED_INSERTION,
+               PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION,
+               PERAMBULATOR_INVALID_ENUM = LAPH_INVALID_ENUM};
+   
+   static PerambulatorType toPerambulatorType(const std::string& s);
 
        // sink spin is 1,2,3,4  (but stored as 0,1,2,3 in right-most two bits)
        // sink time (next 15 bits)
@@ -271,18 +283,19 @@ class PerambulatorHandler {
 	 const GluonSmearingInfo *gSmearPtr;
 	 const QuarkSmearingInfo *qSmearPtr;
 	 const QuarkActionInfo *qactionPtr;
-	 const FileListInfo *fPtr;
-	 const FileListInfo *fPtrSparseGrid;
-    const FileListInfo *fPtrInsertion;
-    const FileListInfo *fPtrSparseGridInsertion;
+    const FileListInfo *fPtr;
+    const FileListInfo *fPtrSparseGrid;
+    const FileListInfo *fPtrSummedInsertion;
+    const FileListInfo *fPtrLeftInsertion;
+    const FileListInfo *fPtrRightInsertion;
+    const FileListInfo *fPtrSparseGridRightInsertion;
+    const FileListInfo *fPtrSparseGridSummedInsertion;
 	 const InverterInfo *invertPtr;
 	 SparseGridHandler *sgHandler;
     InsertionHandler *insHandler;
     SparseGridInsertionHandler *sginsHandler;	 
 	 uint Nspin;
-	 bool sGridOutput;
-    bool insOutput;
-    bool sGridInsOutput;
+    std::map<PerambulatorType, FileListInfo> *pmapPtr;
 	 Mode mode;
 	 void* preconditioner;
 
@@ -308,14 +321,20 @@ class PerambulatorHandler {
 
 	 DataPutHandlerMF<PerambulatorHandler,FileKey,RecordKey,DataType> *DHputPtr;
 	 DataPutHandlerMF<SparseGridHandler,FileKey,RecordKey,DataType> *DHputPtrSparseGrid;
-    DataPutHandlerMF<InsertionHandler,FileKey,RecordKey,DataType> *DHputPtrInsertion;
-    DataPutHandlerMF<SparseGridInsertionHandler,FileKey,RecordKey,DataType> *DHputPtrSparseGridInsertion;
+    DataPutHandlerMF<InsertionHandler,FileKey,RecordKey,DataType> *DHputPtrSummedInsertion;
+    DataPutHandlerMF<InsertionHandler,FileKey,RecordKey,DataType> *DHputPtrLeftInsertion;
+    DataPutHandlerMF<InsertionHandler,FileKey,RecordKey,DataType> *DHputPtrRightInsertion;
+    DataPutHandlerMF<SparseGridInsertionHandler,FileKey,RecordKey,DataType> *DHputPtrSparseGridSummedInsertion;
+    DataPutHandlerMF<SparseGridInsertionHandler,FileKey,RecordKey,DataType> *DHputPtrSparseGridRightInsertion;
 
 
 	 DataGetHandlerMF<PerambulatorHandler,FileKey,RecordKey,DataType> *DHgetPtr;
 	 DataGetHandlerMF<SparseGridHandler,FileKey,RecordKey,DataType> *DHgetPtrSparseGrid;
-    DataGetHandlerMF<InsertionHandler,FileKey,RecordKey,DataType> *DHgetPtrInsertion;
-    DataGetHandlerMF<SparseGridInsertionHandler,FileKey,RecordKey,DataType> *DHgetPtrSparseGridInsertion;
+    DataGetHandlerMF<InsertionHandler,FileKey,RecordKey,DataType> *DHgetPtrSummedInsertion;
+    DataGetHandlerMF<InsertionHandler,FileKey,RecordKey,DataType> *DHgetPtrLeftInsertion;
+    DataGetHandlerMF<InsertionHandler,FileKey,RecordKey,DataType> *DHgetPtrRightInsertion;
+    DataGetHandlerMF<SparseGridInsertionHandler,FileKey,RecordKey,DataType> *DHgetPtrSparseGridSummedInsertion;
+    DataPutHandlerMF<SparseGridInsertionHandler,FileKey,RecordKey,DataType> *DHgetPtrSparseGridRightInsertion;
 
 
  public:
@@ -327,9 +346,8 @@ class PerambulatorHandler {
 			 const GluonSmearingInfo& gluonsmear,
 			 const QuarkSmearingInfo& quarksmear,
 			 const QuarkActionInfo& quark,
-			 const RandomSparseGrid& rsgrid, 
-			 const FileListInfo& flist,
-			 const FileListInfo& flist_sparse_grid,
+			 const RandomSparseGrid& rsgrid,
+          const std::map<PerambulatorType, FileListInfo>& pmap,
 			 const std::string& smeared_quark_filestub,
 			 bool upper_spin_components_only=false,
 			 Mode in_mode=ReadOnly,
@@ -339,8 +357,8 @@ class PerambulatorHandler {
           const GluonSmearingInfo& gluonsmear,
           const QuarkSmearingInfo& quarksmear,
           const QuarkActionInfo& quark,
-          const FileListInfo& flist,
-          const std::string& smeared_quark_filestub,
+          const std::map<PerambulatorType, FileListInfo>& pmap,
+          const std::string& smeared_quark_filestub
           bool upper_spin_components_only=false,
           Mode in_mode=ReadOnly,
           const std::string& gauge_str="default_gauge_field");
@@ -349,9 +367,8 @@ class PerambulatorHandler {
 			 const GluonSmearingInfo& gluonsmear,
 			 const QuarkSmearingInfo& quarksmear,
 			 const QuarkActionInfo& quark,
-			 const InsertionInfo& insinfo, 
-			 const FileListInfo& flist,
-			 const FileListInfo& flist_insertion,
+			 const InsertionInfo& insinfo,
+          const std::map<PerambulatorType, FileListInfo>& pmap,
 			 const std::string& smeared_quark_filestub,
 			 bool upper_spin_components_only=false,
 			 Mode in_mode=ReadOnly,
@@ -362,11 +379,8 @@ class PerambulatorHandler {
 			 const QuarkSmearingInfo& quarksmear,
 			 const QuarkActionInfo& quark,
 			 const RandomSparseGrid& rsgrid,
-          const InsertionInfo& insinfo,  
-			 const FileListInfo& flist,
-          const FileListInfo& flist_sparse_grid,
-			 const FileListInfo& flist_insertion,
-          const FileListInfo& flist_sparse_grid_insertion,
+          const InsertionInfo& insinfo,
+          const std::map<PerambulatorType, FileListInfo>& pmap,
 			 const std::string& smeared_quark_filestub,
 			 bool upper_spin_components_only=false,
 			 Mode in_mode=ReadOnly,
@@ -376,9 +390,8 @@ class PerambulatorHandler {
 			 const GluonSmearingInfo& gluonsmear,
 			 const QuarkSmearingInfo& quarksmear,
 			 const QuarkActionInfo& quark,
-			 const RandomSparseGrid& rsgrid, 
-			 const FileListInfo& flist,
-			 const FileListInfo& flist_sparse_grid,
+			 const RandomSparseGrid& rsgrid,
+          const std::map<PerambulatorType, FileListInfo>& pmap,
 			 const std::string& smeared_quark_filestub,
 			 bool upper_spin_components_only=false,
 			 Mode in_mode=ReadOnly,
@@ -388,7 +401,7 @@ class PerambulatorHandler {
        			 const GluonSmearingInfo& gluonsmear,
        			 const QuarkSmearingInfo& quarksmear,
        			 const QuarkActionInfo& quark,
-       			 const FileListInfo& flist,
+                const std::map<PerambulatorType, FileListInfo>& pmap,
        			 const std::string& smeared_quark_filestub,
        			 bool upper_spin_components_only=false,
        			 Mode in_mode=ReadOnly,
@@ -398,9 +411,8 @@ class PerambulatorHandler {
 			 const GluonSmearingInfo& gluonsmear,
 			 const QuarkSmearingInfo& quarksmear,
 			 const QuarkActionInfo& quark,
-			 const InsertionInfo& insinfo, 
-			 const FileListInfo& flist,
-			 const FileListInfo& flist_insertion,
+			 const InsertionInfo& insinfo,
+          const std::map<PerambulatorType, FileListInfo>& pmap,
 			 const std::string& smeared_quark_filestub,
 			 bool upper_spin_components_only=false,
 			 Mode in_mode=ReadOnly,
@@ -410,12 +422,9 @@ class PerambulatorHandler {
 			 const GluonSmearingInfo& gluonsmear,
 			 const QuarkSmearingInfo& quarksmear,
 			 const QuarkActionInfo& quark,
-           		 const RandomSparseGrid& rsgrid,
-			 const InsertionInfo& insinfo, 
-			 const FileListInfo& flist,
-			 const FileListInfo& flist_sparse_grid,
-			 const FileListInfo& flist_insertion,
-			 const FileListInfo& flist_sparse_grid_insertion,
+          const RandomSparseGrid& rsgrid,
+			 const InsertionInfo& insinfo,
+          const std::map<PerambulatorType, FileListInfo>& pmap,
 			 const std::string& smeared_quark_filestub,
 			 bool upper_spin_components_only=false,
 			 Mode in_mode=ReadOnly,
@@ -552,8 +561,7 @@ class PerambulatorHandler {
                  const QuarkSmearingInfo& quarksmear,
                  const QuarkActionInfo& quark,
 					  const RandomSparseGrid& rsgrid, 
-                 const FileListInfo& flist,
-					  const FileListInfo& flist_sparse_grid,
+                 const std::map<PerambulatorHandler::PerambulatorType, FileListInfo>& pmap,
                  const std::string& smeared_quark_filestub,
                  bool upper_spin_components_only,
                  const std::string& gauge_str, Mode in_mode);
@@ -563,8 +571,7 @@ class PerambulatorHandler {
                  const QuarkSmearingInfo& quarksmear,
                  const QuarkActionInfo& quark,
 					  const InsertionInfo& insinfo, 
-                 const FileListInfo& flist,
-					  const FileListInfo& flist_insertion,
+                 const std::map<PerambulatorHandler::PerambulatorType, FileListInfo>& pmap,
                  const std::string& smeared_quark_filestub,
                  bool upper_spin_components_only,
                  const std::string& gauge_str, Mode in_mode);
@@ -573,12 +580,9 @@ class PerambulatorHandler {
                  const GluonSmearingInfo& gluonsmear,
                  const QuarkSmearingInfo& quarksmear,
                  const QuarkActionInfo& quark,
-		 const RandomSparseGrid& rsgrid,
-		 const InsertionInfo& insinfo, 
-                 const FileListInfo& flist,
-                 const FileListInfo& flist_sparse_grid,
-     		 const FileListInfo& flist_insertion,
-                 const FileListInfo& flist_sparse_grid_insertion,
+		           const RandomSparseGrid& rsgrid,
+		           const InsertionInfo& insinfo, 
+                 const std::map<PerambulatorHandler::PerambulatorType, FileListInfo>& pmap,
                  const std::string& smeared_quark_filestub,
                  bool upper_spin_components_only,
                  const std::string& gauge_str, Mode in_mode);
@@ -587,7 +591,7 @@ class PerambulatorHandler {
                  const GluonSmearingInfo& gluonsmear,
                  const QuarkSmearingInfo& quarksmear,
                  const QuarkActionInfo& quark,
-                 const FileListInfo& flist,
+                 const std::map<PerambulatorHandler::PerambulatorType, FileListInfo>& pmap,
                  const std::string& smeared_quark_filestub,
                  bool upper_spin_components_only,
                  const std::string& gauge_str, Mode in_mode);
@@ -607,15 +611,15 @@ class PerambulatorHandler {
    void disconnectQuarkSmearingHandler();
 
    void computePerambulators(int src_time, int tmin, int tmax, const std::set<int>& src_evindices,
-                             const std::vector<void*>& evList, bool print_coeffs,
-                             bool extra_soln_check, bool report_gflops, 
+                             const std::vector<void*>& evList, const std::vector<void*>& evList_scaled,
+                             bool print_coeffs, bool extra_soln_check, bool report_gflops, 
                              double& makesrc_time, double& inv_time, double& ins_time,
                              double& evproj_time, double& write_time,
                              bool use_multisrc_inverter);
 
    void computePerambulatorsMS(int src_time, int tmin, int tmax, const std::set<int>& src_evindices,
-                               const std::vector<void*>& evList, bool print_coeffs,
-                               bool extra_soln_check, bool report_gflops, 
+                               const std::vector<void*>& evList, const std::vector<void*>& evList,
+                               bool print_coeffs, bool extra_soln_check, bool report_gflops, 
                                double& makesrc_time, double& inv_time, double& ins_time,
                                double& evproj_time, double& write_time);
 
@@ -631,6 +635,12 @@ class PerambulatorHandler {
 
    void make_source(LattField& ferm_src, const void* ev_src_ptr, 
                     int src_time, int src_spin);
+
+   void PerambulatorHandler::scale_by_ins_times_coord(T* data, int ncmplx_per_site,
+                                        std::vector<int>& coeff);
+
+   void PerambulatorHandler::scale_by_ins_times_coord(LattField& field,
+                                        std::vector<int>& coeff);
 
    void doACheck(const PerambComputation& pcomp, int src_spin,
                  const std::string& logfile, bool verbose_output);

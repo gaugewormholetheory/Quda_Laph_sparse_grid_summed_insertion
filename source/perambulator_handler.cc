@@ -15,6 +15,25 @@ typedef std::complex<double> dcmplx;
 typedef std::complex<float>  fcmplx;
 
 namespace LaphEnv {
+
+static PerambulatorType toPerambulatorType(const std::string& s)
+   {
+      if (s=="PERAMBULATOR_STANDARD"){
+         printLaph(s + " output enabled."); return PERAMBULATOR_STANDARD;}                      
+      if (s=="PERAMBULATOR_LEFT_SPARSE_GRID"){
+         printLaph(s + " output enabled."); return PERAMBULATOR_LEFT_SPARSE_GRID;}              
+      if (s=="PERAMBULATOR_LEFT_INSERTION"){
+         printLaph(s + " output enabled."); return PERAMBULATOR_LEFT_INSERTION;}                  
+      if (s=="PERAMBULATOR_RIGHT_INSERTION"){
+         printLaph(s + " output enabled."); return PERAMBULATOR_RIGHT_INSERTION;}
+      if (s=="PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION"){
+         printLaph(s + " output enabled."); return PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION;} 
+      if (s=="PERAMBULATOR_SUMMED_INSERTION") {
+         printLaph(s + " output enabled."); return PERAMBULATOR_SUMMED_INSERTION;}                 
+      if (s=="PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION"){
+         printLaph(s + " output enabled."); return PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION;}
+      return PERAMBULATOR_INVALID_ENUM;
+   }
    
 // *************************************************************************
 
@@ -92,28 +111,33 @@ bool PerambulatorHandler::FileKey::operator!=(const FileKey& rhs) const
 // *************************************************************************
 
 
-// constructors: default, standard, sparse-grid, insertion, sparse-grid insetion
+// constructors: default, standard, sparse-grid-type, insertion-type, sparse-grid-insertion-type
 
 PerambulatorHandler::PerambulatorHandler()
           : uPtr(0), gSmearPtr(0), qSmearPtr(0), qactionPtr(0),
-            fPtr(0), fPtrSparseGrid(0), fPtrInsertion(0), fPtrSparseGridInsertion(0), invertPtr(0), Nspin(4), mode(ReadOnly),
-            preconditioner(0), DHputPtr(0), DHputPtrSparseGrid(0), DHputPtrInsertion(0), DHputPtrSparseGridInsertion(0), DHgetPtr(0), 
-				DHgetPtrSparseGrid(0), DHgetPtrInsertion(0), DHgetPtrSparseGridInsertion(0), sGridOutput(false), insOutput(false), sGridInsOutput(false)  {}
+            pmapPtr(0), invertPtr(0), Nspin(4), mode(ReadOnly),
+            preconditioner(0), fPtr(0), fPtrSparseGrid(0), fPtrSummedInsertion(0), fPtrLeftInsertion(0), 
+            fPtrRightInsertion(0), fPtrSparseGridSummedInsertion(0), fPtrSparseGridRightInsertion(0), 
+            DHputPtr(0), DHputPtrSparseGrid(0), DHputPtrSummedInsertion(0), DHputPtrLeftInsertion(0), 
+            DHputPtrRightInsertion(0), DHputPtrSparseGridSummedInsertion(0), DHputPtrSparseGridRightInsertion(0), 
+            DHgetPtr(0), DHgetPtrSparseGrid(0), DHgetPtrSummedInsertion(0), DHgetPtrLeftInsertion(0), 
+            DHgetPtrRightInsertion(0), DHgetPtrSparseGridSummedInsertion(0), DHputPtrSparseGridRightInsertion(0) {}
 
 
 PerambulatorHandler::PerambulatorHandler(const GaugeConfigurationInfo& gaugeinfo,
                                          const GluonSmearingInfo& gluonsmear,
                                          const QuarkSmearingInfo& quarksmear,
                                          const QuarkActionInfo& quark,
-                                         const FileListInfo& flist,
+                                         const std::map<PerambulatorHandler::PerambulatorType, FileListInfo>& pmap,
                                          const string& smeared_quark_filestub,
                                          bool upper_spin_components_only,
                                          Mode in_mode, const string& gauge_str)
-          : invertPtr(0), preconditioner(0), DHputPtr(0), DHputPtrSparseGrid(0),
-            DHputPtrInsertion(0), DHputPtrSparseGridInsertion(0), 
-				DHgetPtr(0), DHgetPtrSparseGrid(0), DHgetPtrInsertion(0), DHgetPtrSparseGridInsertion(0), 
-            sGridOutput(false), insOutput(false), sGridInsOutput(false){
- set_info(gaugeinfo,gluonsmear,quarksmear,quark,flist,smeared_quark_filestub,
+          : invertPtr(0), preconditioner(0), DHputPtr(0), DHputPtrSparseGrid(0), DHputPtrSummedInsertion(0), 
+            DHputPtrLeftInsertion(0), DHputPtrRightInsertion(0), DHputPtrSparseGridSummedInsertion(0), 
+            DHputPtrSparseGridRightInsertion(0), DHgetPtr(0), DHgetPtrSparseGrid(0), DHgetPtrSummedInsertion(0), 
+            DHgetPtrLeftInsertion(0), DHgetPtrRightInsertion(0), DHgetPtrSparseGridSummedInsertion(0), 
+            DHputPtrSparseGridRightInsertion(0){
+ set_info(gaugeinfo,gluonsmear,quarksmear,quark,pmap,smeared_quark_filestub,
 		 upper_spin_components_only,gauge_str,in_mode);
 }
 
@@ -122,17 +146,17 @@ PerambulatorHandler::PerambulatorHandler(const GaugeConfigurationInfo& gaugeinfo
                                          const QuarkSmearingInfo& quarksmear,
                                          const QuarkActionInfo& quark,
                                          const RandomSparseGrid& rsgrid,
-                                         const FileListInfo& flist,
-                                         const FileListInfo& flist_sparse_grid,
+                                         const std::map<PerambulatorHandler::PerambulatorType, FileListInfo>& pmap,
                                          const string& smeared_quark_filestub,
                                          bool upper_spin_components_only,
                                          Mode in_mode, const string& gauge_str)
-          : invertPtr(0), preconditioner(0), DHputPtr(0), DHputPtrSparseGrid(0),
-          DHputPtrInsertion(0), DHputPtrSparseGridInsertion(0),
-          DHgetPtr(0), DHgetPtrSparseGrid(0), DHgetPtrInsertion(0), DHgetPtrSparseGridInsertion(0),
-          sGridOutput(true), insOutput(false), sGridInsOutput(false){
- set_info(gaugeinfo,gluonsmear,quarksmear,quark,rsgrid,flist,flist_sparse_grid,
-          smeared_quark_filestub,upper_spin_components_only,gauge_str,in_mode);
+          : invertPtr(0), preconditioner(0), DHputPtr(0), DHputPtrSparseGrid(0), DHputPtrSummedInsertion(0), 
+            DHputPtrLeftInsertion(0), DHputPtrRightInsertion(0), DHputPtrSparseGridSummedInsertion(0), 
+            DHputPtrSparseGridRightInsertion(0), DHgetPtr(0), DHgetPtrSparseGrid(0), DHgetPtrSummedInsertion(0), 
+            DHgetPtrLeftInsertion(0), DHgetPtrRightInsertion(0), DHgetPtrSparseGridSummedInsertion(0), 
+            DHputPtrSparseGridRightInsertion(0){
+ set_info(gaugeinfo,gluonsmear,quarksmear,quark,rsgrid,pmap,smeared_quark_filestub,
+   upper_spin_components_only,gauge_str,in_mode);
 }
 
 PerambulatorHandler::PerambulatorHandler(const GaugeConfigurationInfo& gaugeinfo,
@@ -140,17 +164,17 @@ PerambulatorHandler::PerambulatorHandler(const GaugeConfigurationInfo& gaugeinfo
                                          const QuarkSmearingInfo& quarksmear,
                                          const QuarkActionInfo& quark,
                                          const InsertionInfo& insinfo,
-                                         const FileListInfo& flist,
-                                         const FileListInfo& flist_insertion,
+                                         const std::map<PerambulatorHandler::PerambulatorType, FileListInfo>& pmap,
                                          const string& smeared_quark_filestub,
                                          bool upper_spin_components_only,
                                          Mode in_mode, const string& gauge_str)
-          : invertPtr(0), preconditioner(0), DHputPtr(0), DHputPtrSparseGrid(0),
-          DHputPtrInsertion(0), DHputPtrSparseGridInsertion(0),
-          DHgetPtr(0), DHgetPtrSparseGrid(0), DHgetPtrInsertion(0), DHgetPtrSparseGridInsertion(0),
-          sGridOutput(false), insOutput(true), sGridInsOutput(false){
- set_info(gaugeinfo,gluonsmear,quarksmear,quark,insinfo,flist,flist_insertion,
-          smeared_quark_filestub,upper_spin_components_only,gauge_str,in_mode);
+          : invertPtr(0), preconditioner(0), DHputPtr(0), DHputPtrSparseGrid(0), DHputPtrSummedInsertion(0), 
+            DHputPtrLeftInsertion(0), DHputPtrRightInsertion(0), DHputPtrSparseGridSummedInsertion(0), 
+            DHputPtrSparseGridRightInsertion(0), DHgetPtr(0), DHgetPtrSparseGrid(0), DHgetPtrSummedInsertion(0), 
+            DHgetPtrLeftInsertion(0), DHgetPtrRightInsertion(0), DHgetPtrSparseGridSummedInsertion(0), 
+            DHputPtrSparseGridRightInsertion(0){
+ set_info(gaugeinfo,gluonsmear,quarksmear,quark,insinfo,pmap,smeared_quark_filestub,
+   upper_spin_components_only,gauge_str,in_mode);
 }
 
 PerambulatorHandler::PerambulatorHandler(const GaugeConfigurationInfo& gaugeinfo,
@@ -159,18 +183,16 @@ PerambulatorHandler::PerambulatorHandler(const GaugeConfigurationInfo& gaugeinfo
                                          const QuarkActionInfo& quark,
                                          const RandomSparseGrid& rsgrid,
                                          const InsertionInfo& insinfo,
-                                         const FileListInfo& flist,
-                                         const FileListInfo& flist_sparse_grid,
-                                         const FileListInfo& flist_insertion,
-                                         const FileListInfo& flist_sparse_grid_insertion,
+                                         const std::map<PerambulatorHandler::PerambulatorType, FileListInfo>& pmap,
                                          const string& smeared_quark_filestub,
                                          bool upper_spin_components_only,
                                          Mode in_mode, const string& gauge_str)
-          : invertPtr(0), preconditioner(0), DHputPtr(0), DHputPtrSparseGrid(0),
-          DHputPtrInsertion(0), DHputPtrSparseGridInsertion(0),
-          DHgetPtr(0), DHgetPtrSparseGrid(0), DHgetPtrInsertion(0), DHgetPtrSparseGridInsertion(0),
-          sGridOutput(true), insOutput(true), sGridInsOutput(true){
- set_info(gaugeinfo,gluonsmear,quarksmear,quark,rsgrid,insinfo,flist,flist_sparse_grid,flist_insertion,flist_sparse_grid_insertion,
+          : invertPtr(0), preconditioner(0), DHputPtr(0), DHputPtrSparseGrid(0), DHputPtrSummedInsertion(0), 
+            DHputPtrLeftInsertion(0), DHputPtrRightInsertion(0), DHputPtrSparseGridSummedInsertion(0), 
+            DHputPtrSparseGridRightInsertion(0), DHgetPtr(0), DHgetPtrSparseGrid(0), DHgetPtrSummedInsertion(0), 
+            DHgetPtrLeftInsertion(0), DHgetPtrRightInsertion(0), DHgetPtrSparseGridSummedInsertion(0), 
+            DHputPtrSparseGridRightInsertion(0){
+ set_info(gaugeinfo,gluonsmear,quarksmear,quark,rsgrid,insinfo,pmap,
           smeared_quark_filestub,upper_spin_components_only,gauge_str,in_mode);
 }
 
@@ -179,17 +201,13 @@ void PerambulatorHandler::setInfo(const GaugeConfigurationInfo& gaugeinfo,
                                   const QuarkSmearingInfo& quarksmear,
                                   const QuarkActionInfo& quark,
 											 const RandomSparseGrid& rsgrid,
-                                  const FileListInfo& flist,
-                                  const FileListInfo& flist_sparse_grid,
+                                  const std::map<PerambulatorHandler::PerambulatorType, FileListInfo>& pmap,
                                   const string& smeared_quark_filestub,
                                   bool upper_spin_components_only,
                                   Mode in_mode, const string& gauge_str)
 {
  clear(); 
- sGridOutput=true;
- insOutput=false;
- sGridInsOutput=false;
- set_info(gaugeinfo,gluonsmear,quarksmear,quark,rsgrid,flist,flist_sparse_grid,
+ set_info(gaugeinfo,gluonsmear,quarksmear,quark,rsgrid,pmap,
           smeared_quark_filestub,upper_spin_components_only,gauge_str,in_mode);
 }
 
@@ -197,16 +215,13 @@ void PerambulatorHandler::setInfo(const GaugeConfigurationInfo& gaugeinfo,
                                   const GluonSmearingInfo& gluonsmear,
                                   const QuarkSmearingInfo& quarksmear,
                                   const QuarkActionInfo& quark,
-                                  const FileListInfo& flist,
+                                  const std::map<PerambulatorHandler::PerambulatorType, FileListInfo>& pmap,
                                   const string& smeared_quark_filestub,
                                   bool upper_spin_components_only,
                                   Mode in_mode, const string& gauge_str)
 {
  clear(); 
- sGridOutput=false;
- insOutput=false;
- sGridInsOutput=false;
- set_info(gaugeinfo,gluonsmear,quarksmear,quark,flist,smeared_quark_filestub,
+ set_info(gaugeinfo,gluonsmear,quarksmear,quark,pmap,smeared_quark_filestub,
 		 upper_spin_components_only,gauge_str,in_mode);
 }
 
@@ -215,17 +230,13 @@ void PerambulatorHandler::setInfo(const GaugeConfigurationInfo& gaugeinfo,
                                   const QuarkSmearingInfo& quarksmear,
                                   const QuarkActionInfo& quark,
 											 const InsertionInfo& insinfo,
-                                  const FileListInfo& flist,
-                                  const FileListInfo& flist_insertion,
+                                  const std::map<PerambulatorHandler::PerambulatorType, FileListInfo>& pmap,
                                   const string& smeared_quark_filestub,
                                   bool upper_spin_components_only,
                                   Mode in_mode, const string& gauge_str)
 {
  clear(); 
- sGridOutput=false;
- insOutput=true;
- sGridInsOutput=false;
- set_info(gaugeinfo,gluonsmear,quarksmear,quark,insinfo,flist,flist_insertion,
+ set_info(gaugeinfo,gluonsmear,quarksmear,quark,insinfo,pmap,
           smeared_quark_filestub,upper_spin_components_only,gauge_str,in_mode);
 }
 
@@ -235,19 +246,13 @@ void PerambulatorHandler::setInfo(const GaugeConfigurationInfo& gaugeinfo,
                                   const QuarkActionInfo& quark,
                                   const RandomSparseGrid& rsgrid,
 											 const InsertionInfo& insinfo,
-                                  const FileListInfo& flist,
-                                  const FileListInfo& flist_sparse_grid,
-                                  const FileListInfo& flist_insertion,
-                                  const FileListInfo& flist_sparse_grid_insertion,
+                                  const std::map<PerambulatorHandler::PerambulatorType, FileListInfo>& pmap,
                                   const string& smeared_quark_filestub,
                                   bool upper_spin_components_only,
                                   Mode in_mode, const string& gauge_str)
 {
  clear(); 
- sGridOutput=true;
- insOutput=true;
- sGridInsOutput=true;
- set_info(gaugeinfo,gluonsmear,quarksmear,quark,rsgrid,insinfo,flist,flist_sparse_grid,flist_insertion,flist_sparse_grid_insertion,
+ set_info(gaugeinfo,gluonsmear,quarksmear,quark,rsgrid,insinfo,pmap,
           smeared_quark_filestub,upper_spin_components_only,gauge_str,in_mode);
 }
 
@@ -256,28 +261,29 @@ void PerambulatorHandler::set_info(const GaugeConfigurationInfo& gaugeinfo,
                                    const QuarkSmearingInfo& quarksmear,
                                    const QuarkActionInfo& quark,
 											  const RandomSparseGrid& rsgrid,
-                                   const FileListInfo& flist,
-                                   const FileListInfo& flist_sparse_grid,
+                                   const std::map<PerambulatorHandler::PerambulatorType, FileListInfo>& pmap,
                                    const string& smeared_quark_filestub,
                                    bool upper_spin_components_only,
                                    const string& gauge_str, Mode in_mode)
 {
- set_info(gaugeinfo,gluonsmear,quarksmear,quark,flist,smeared_quark_filestub,
+ set_info(gaugeinfo,gluonsmear,quarksmear,quark,pmap,smeared_quark_filestub,
 		 upper_spin_components_only,gauge_str,in_mode);
  try{
 
-	  sgHandler = new SparseGridHandler(gaugeinfo,gluonsmear,quarksmear,quark,rsgrid,Nspin);
-    fPtrSparseGrid = new FileListInfo(flist_sparse_grid);
-    if ((mode==Compute)||(mode==Merge)){
-			 DHputPtrSparseGrid=new DataPutHandlerMF<SparseGridHandler,FileKey,RecordKey,DataType>(
+	 sgHandler = new SparseGridHandler(gaugeinfo,gluonsmear,quarksmear,quark,rsgrid,Nspin);
+    if ( pmap.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID)==1){
+       fPtrSparseGrid = new FileListInfo( pmap.at(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID) );
+       if ((mode==Compute)||(mode==Merge)){
+          DHputPtrSparseGrid=new DataPutHandlerMF<SparseGridHandler,FileKey,RecordKey,DataType>(
                        *sgHandler,*fPtrSparseGrid,"Laph--SparseGridQuarkPeramb","PerambulatorHandlerSparseGridDataFile");
-		}
-    if ((mode==ReadOnly)||(mode==Check)){
-       bool globalmode=(mode==ReadOnly); 
-       DHgetPtrSparseGrid=new DataGetHandlerMF<SparseGridHandler,FileKey,RecordKey,DataType>(
-                    *sgHandler,*fPtrSparseGrid,"Laph--SparseGridQuarkPeramb","PerambulatorHandlerSparseGridDataFile",globalmode);
-		}
- }
+	   	}
+       if ((mode==ReadOnly)||(mode==Check)){
+          bool globalmode=(mode==ReadOnly); 
+          DHgetPtrSparseGrid=new DataGetHandlerMF<SparseGridHandler,FileKey,RecordKey,DataType>(
+                       *sgHandler,*fPtrSparseGrid,"Laph--SparseGridQuarkPeramb","PerambulatorHandlerSparseGridDataFile",globalmode);
+	    	}
+      }
+    }
  catch(const std::exception& xp){
     errorLaph(make_strf("allocation problem in PerambulatorHandler: %s",xp.what()));}
 }
@@ -287,8 +293,7 @@ void PerambulatorHandler::set_info(const GaugeConfigurationInfo& gaugeinfo,
                                    const QuarkSmearingInfo& quarksmear,
                                    const QuarkActionInfo& quark,
 											  const InsertionInfo& insinfo,
-                                   const FileListInfo& flist,
-                                   const FileListInfo& flist_insertion,
+                                   const std::map<PerambulatorHandler::PerambulatorType, FileListInfo>& pmap,
                                    const string& smeared_quark_filestub,
                                    bool upper_spin_components_only,
                                    const string& gauge_str, Mode in_mode)
@@ -297,19 +302,38 @@ void PerambulatorHandler::set_info(const GaugeConfigurationInfo& gaugeinfo,
 		 upper_spin_components_only,gauge_str,in_mode);
 
  try{    
-	 insHandler = new InsertionHandler(gaugeinfo,gluonsmear,quarksmear,quark,insinfo,Nspin); 
-	 fPtrInsertion = new FileListInfo(flist_insertion);
-     	 sginsHandler = nullptr;
-	 if ((mode==Compute)||(mode==Merge)){
-			 DHputPtrInsertion=new DataPutHandlerMF<InsertionHandler,FileKey,RecordKey,DataType>(
-                       *insHandler,*fPtrInsertion,"Laph--InsertionQuarkPeramb","PerambulatorHandlerDataFile");
-
-		}
-    if ((mode==ReadOnly)||(mode==Check)){
-       bool globalmode=(mode==ReadOnly); 
-       DHgetPtrInsertion=new DataGetHandlerMF<InsertionHandler,FileKey,RecordKey,DataType>(
-                    *insHandler,*fPtrInsertion,"Laph--InsertionQuarkPeramb","PerambulatorHandlerDataFile",globalmode);
-		}
+	 insHandler = new InsertionHandler(gaugeinfo,gluonsmear,quarksmear,quark,insinfo,Nspin);
+    sginsHandler = nullptr;
+	 if ( pmap.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_SUMMED_INSERTION)==1){
+       fPtrSummedInsertion = new FileListInfo( pmap.at(PerambulatorHandler::PerambulatorType::PERAMBULATOR_SUMMED_INSERTION) );
+	    if ((mode==Compute)||(mode==Merge)){
+			 DHputPtrSummedInsertion=new DataPutHandlerMF<InsertionHandler,FileKey,RecordKey,DataType>(
+                       *insHandler,*fPtrSummedInsertion,"Laph--InsertionQuarkPeramb","PerambulatorHandlerDataFile");}
+       if ((mode==ReadOnly)||(mode==Check)){
+          bool globalmode=(mode==ReadOnly); 
+          DHgetPtrSummedInsertion=new DataGetHandlerMF<InsertionHandler,FileKey,RecordKey,DataType>(
+                       *insHandler,*fPtrSummedInsertion,"Laph--InsertionQuarkPeramb","PerambulatorHandlerDataFile",globalmode);}
+       }  
+	 if ( pmap.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_INSERTION)==1){
+       fPtrLeftInsertion = new FileListInfo( pmap.at(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_INSERTION) );
+	    if ((mode==Compute)||(mode==Merge)){
+			 DHputPtrLeftInsertion=new DataPutHandlerMF<InsertionHandler,FileKey,RecordKey,DataType>(
+                       *insHandler,*fPtrLeftInsertion,"Laph--InsertionQuarkPeramb","PerambulatorHandlerDataFile");}
+       if ((mode==ReadOnly)||(mode==Check)){
+          bool globalmode=(mode==ReadOnly); 
+          DHgetPtrLeftInsertion=new DataGetHandlerMF<InsertionHandler,FileKey,RecordKey,DataType>(
+                       *insHandler,*fPtrLeftInsertion,"Laph--InsertionQuarkPeramb","PerambulatorHandlerDataFile",globalmode);}
+       }
+	 if ( pmap.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_RIGHT_INSERTION)==1){
+       fPtrRightInsertion = new FileListInfo( pmap.at(PerambulatorHandler::PerambulatorType::PERAMBULATOR_RIGHT_INSERTION) );
+	    if ((mode==Compute)||(mode==Merge)){
+			 DHputPtrRightInsertion=new DataPutHandlerMF<InsertionHandler,FileKey,RecordKey,DataType>(
+                       *insHandler,*fPtrRightInsertion,"Laph--InsertionQuarkPeramb","PerambulatorHandlerDataFile");}
+       if ((mode==ReadOnly)||(mode==Check)){
+          bool globalmode=(mode==ReadOnly); 
+          DHgetPtrRightInsertion=new DataGetHandlerMF<InsertionHandler,FileKey,RecordKey,DataType>(
+                       *insHandler,*fPtrRightInsertion,"Laph--InsertionQuarkPeramb","PerambulatorHandlerDataFile",globalmode);}
+       }
  }
  catch(const std::exception& xp){
     errorLaph(make_strf("allocation problem in PerambulatorHandler: %s",xp.what()));}
@@ -321,41 +345,78 @@ void PerambulatorHandler::set_info(const GaugeConfigurationInfo& gaugeinfo,
                                    const QuarkActionInfo& quark,
 											  const RandomSparseGrid& rsgrid,
                                    const InsertionInfo& insinfo,
-                                   const FileListInfo& flist,
-                                   const FileListInfo& flist_sparse_grid,
-                                   const FileListInfo& flist_insertion,
-                                   const FileListInfo& flist_sparse_grid_insertion,
+                                   const std::map<PerambulatorHandler::PerambulatorType, FileListInfo>& pmap,
                                    const string& smeared_quark_filestub,
                                    bool upper_spin_components_only,
                                    const string& gauge_str, Mode in_mode)
 {
- set_info(gaugeinfo,gluonsmear,quarksmear,quark,flist,smeared_quark_filestub,
+ set_info(gaugeinfo,gluonsmear,quarksmear,quark,pmap,smeared_quark_filestub,
 		 upper_spin_components_only,gauge_str,in_mode);
  try{
 
 	 sgHandler = new SparseGridHandler(gaugeinfo,gluonsmear,quarksmear,quark,rsgrid,Nspin);
-    fPtrSparseGrid = new FileListInfo(flist_sparse_grid);
     insHandler = new InsertionHandler(gaugeinfo,gluonsmear,quarksmear,quark,insinfo,Nspin);
-    fPtrInsertion = new FileListInfo(flist_insertion);
     sginsHandler = new SparseGridInsertionHandler(gaugeinfo,gluonsmear,quarksmear,quark,rsgrid,insinfo,Nspin);
-    fPtrSparseGridInsertion = new FileListInfo(flist_sparse_grid_insertion);
-    if ((mode==Compute)||(mode==Merge)){
+    if ( pmap.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID)==1){
+       fPtrSparseGrid = new FileListInfo( pmap.at(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID) );
+	    if ((mode==Compute)||(mode==Merge)){
 			 DHputPtrSparseGrid=new DataPutHandlerMF<SparseGridHandler,FileKey,RecordKey,DataType>(
-                       *sgHandler,*fPtrSparseGrid,"Laph--SparseGridQuarkPeramb","PerambulatorHandlerSparseGridDataFile");
-          DHputPtrInsertion=new DataPutHandlerMF<InsertionHandler,FileKey,RecordKey,DataType>(
-                       *insHandler,*fPtrInsertion,"Laph--InsertionQuarkPeramb","PerambulatorHandlerDataFile");
-          DHputPtrSparseGridInsertion=new DataPutHandlerMF<SparseGridInsertionHandler,FileKey,RecordKey,DataType>(
-                       *sginsHandler,*fPtrSparseGridInsertion,"Laph--SGInsQuarkPeramb","PerambulatorHandlerSparseGridDataFile");
-		}
-    if ((mode==ReadOnly)||(mode==Check)){
-       bool globalmode=(mode==ReadOnly); 
-       DHgetPtrSparseGrid=new DataGetHandlerMF<SparseGridHandler,FileKey,RecordKey,DataType>(
-                    *sgHandler,*fPtrSparseGrid,"Laph--SparseGridQuarkPeramb","PerambulatorHandlerSparseGridDataFile",globalmode);
-       DHgetPtrInsertion=new DataGetHandlerMF<InsertionHandler,FileKey,RecordKey,DataType>(
-                    *insHandler,*fPtrInsertion,"Laph--InsertionQuarkPeramb","PerambulatorHandlerDataFile",globalmode);
-       DHgetPtrSparseGridInsertion=new DataGetHandlerMF<SparseGridInsertionHandler,FileKey,RecordKey,DataType>(
-                    *sginsHandler,*fPtrSparseGridInsertion,"Laph--SGInsQuarkPeramb","PerambulatorHandlerSparseGridDataFile",globalmode);
-		}
+                       *sgHandler,*fPtrSparseGrid,"Laph--SparseGridQuarkPeramb","PerambulatorHandlerSparseGridDataFile");}
+       if ((mode==ReadOnly)||(mode==Check)){
+          bool globalmode=(mode==ReadOnly); 
+          DHgetPtrSparseGrid=new DataGetHandlerMF<SparseGridHandler,FileKey,RecordKey,DataType>(
+                       *sgHandler,*fPtrSparseGrid,"Laph--SparseGridQuarkPeramb","PerambulatorHandlerSparseGridDataFile",globalmode);}
+       }  
+	 if ( pmap.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_SUMMED_INSERTION)==1){
+       fPtrSummedInsertion = new FileListInfo( pmap.at(PerambulatorHandler::PerambulatorType::PERAMBULATOR_SUMMED_INSERTION) );
+	    if ((mode==Compute)||(mode==Merge)){
+			 DHputPtrSummedInsertion=new DataPutHandlerMF<InsertionHandler,FileKey,RecordKey,DataType>(
+                       *insHandler,*fPtrSummedInsertion,"Laph--InsertionQuarkPeramb","PerambulatorHandlerDataFile");}
+       if ((mode==ReadOnly)||(mode==Check)){
+          bool globalmode=(mode==ReadOnly); 
+          DHgetPtrSummedInsertion=new DataGetHandlerMF<InsertionHandler,FileKey,RecordKey,DataType>(
+                       *insHandler,*fPtrSummedInsertion,"Laph--InsertionQuarkPeramb","PerambulatorHandlerDataFile",globalmode);}
+       }  
+	 if ( pmap.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_INSERTION)==1){
+       fPtrLeftInsertion = new FileListInfo( pmap.at(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_INSERTION) );
+	    if ((mode==Compute)||(mode==Merge)){
+			 DHputPtrLeftInsertion=new DataPutHandlerMF<InsertionHandler,FileKey,RecordKey,DataType>(
+                       *insHandler,*fPtrLeftInsertion,"Laph--InsertionQuarkPeramb","PerambulatorHandlerDataFile");}
+       if ((mode==ReadOnly)||(mode==Check)){
+          bool globalmode=(mode==ReadOnly); 
+          DHgetPtrLeftInsertion=new DataGetHandlerMF<InsertionHandler,FileKey,RecordKey,DataType>(
+                       *insHandler,*fPtrLeftInsertion,"Laph--InsertionQuarkPeramb","PerambulatorHandlerDataFile",globalmode);}
+       }
+	 if ( pmap.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_RIGHT_INSERTION)==1){
+       fPtrRightInsertion = new FileListInfo( pmap.at(PerambulatorHandler::PerambulatorType::PERAMBULATOR_RIGHT_INSERTION) );
+	    if ((mode==Compute)||(mode==Merge)){
+			 DHputPtrRightInsertion=new DataPutHandlerMF<InsertionHandler,FileKey,RecordKey,DataType>(
+                       *insHandler,*fPtrRightInsertion,"Laph--InsertionQuarkPeramb","PerambulatorHandlerDataFile");}
+       if ((mode==ReadOnly)||(mode==Check)){
+          bool globalmode=(mode==ReadOnly); 
+          DHgetPtrRightInsertion=new DataGetHandlerMF<InsertionHandler,FileKey,RecordKey,DataType>(
+                       *insHandler,*fPtrRightInsertion,"Laph--InsertionQuarkPeramb","PerambulatorHandlerDataFile",globalmode);}
+       }
+	 if ( pmap.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION)==1){
+       fPtrSparseGridSummedInsertion = new FileListInfo( pmap.at(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION) );
+	    if ((mode==Compute)||(mode==Merge)){
+			 DHputPtrSparseGridSummedInsertion=new DataPutHandlerMF<SparseGridInsertionHandler,FileKey,RecordKey,DataType>(
+                       *sginsHandler,*fPtrSparseGridSummedInsertion,"Laph--SparseGridQuarkPeramb","PerambulatorHandlerSparseGridDataFile");}
+       if ((mode==ReadOnly)||(mode==Check)){
+          bool globalmode=(mode==ReadOnly); 
+          DHgetPtrSparseGridSummedInsertion=new DataGetHandlerMF<SparseGridInsertionHandler,FileKey,RecordKey,DataType>(
+                       *sginsHandler,*fPtrSparseGridSummedInsertion,"Laph--SparseGridQuarkPeramb","PerambulatorHandlerSparseGridDataFile",globalmode);}
+       }
+	 if ( pmap.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION)==1){
+       fPtrSparseGridRightInsertion = new FileListInfo( pmap.at(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION) );
+	    if ((mode==Compute)||(mode==Merge)){
+			 DHputPtrSparseGridRightInsertion=new DataPutHandlerMF<SparseGridInsertionHandler,FileKey,RecordKey,DataType>(
+                       *sginsHandler,*fPtrSparseGridRightInsertion,"Laph--SparseGridQuarkPeramb","PerambulatorHandlerSparseGridDataFile");}
+       if ((mode==ReadOnly)||(mode==Check)){
+          bool globalmode=(mode==ReadOnly); 
+          DHgetPtrSparseGridRightInsertion=new DataGetHandlerMF<SparseGridInsertionHandler,FileKey,RecordKey,DataType>(
+                       *sginsHandler,*fPtrSparseGridRightInsertion,"Laph--SparseGridQuarkPeramb","PerambulatorHandlerSparseGridDataFile",globalmode);}
+       }
  }
  catch(const std::exception& xp){
     errorLaph(make_strf("allocation problem in PerambulatorHandler: %s",xp.what()));}
@@ -365,7 +426,7 @@ void PerambulatorHandler::set_info(const GaugeConfigurationInfo& gaugeinfo,
                                    const GluonSmearingInfo& gluonsmear,
                                    const QuarkSmearingInfo& quarksmear,
                                    const QuarkActionInfo& quark,
-                                   const FileListInfo& flist,
+                                   const std::map<PerambulatorHandler::PerambulatorType, FileListInfo>& pmap,
                                    const string& smeared_quark_filestub,
                                    bool upper_spin_components_only,
                                    const string& gauge_str, Mode in_mode)
@@ -375,17 +436,20 @@ void PerambulatorHandler::set_info(const GaugeConfigurationInfo& gaugeinfo,
     gSmearPtr = new GluonSmearingInfo(gluonsmear);
     qSmearPtr = new QuarkSmearingInfo(quarksmear);
     qactionPtr = new QuarkActionInfo(quark);
-    fPtr = new FileListInfo(flist);
-		Nspin = (upper_spin_components_only) ? 2 : 4;
+	 Nspin = (upper_spin_components_only) ? 2 : 4;
     mode = in_mode;
-    if ((mode==Compute)||(mode==Merge)){
-       DHputPtr=new DataPutHandlerMF<PerambulatorHandler,FileKey,RecordKey,DataType>(
-                       *this,*fPtr,"Laph--QuarkPeramb","PerambulatorHandlerDataFile");
-		}
-    if ((mode==ReadOnly)||(mode==Check)){
-       bool globalmode=(mode==ReadOnly); 
-       DHgetPtr=new DataGetHandlerMF<PerambulatorHandler,FileKey,RecordKey,DataType>(
-                    *this,*fPtr,"Laph--QuarkPeramb","PerambulatorHandlerDataFile",globalmode);}}
+    pmapPtr = new std::map<PerambulatorType, FileListInfo>(pmap);
+    if ( pmap.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_STANDARD)==1){
+       fPtr = new FileListInfo( pmap.at(PerambulatorHandler::PerambulatorType::PERAMBULATOR_STANDARD) );
+       if ((mode==Compute)||(mode==Merge)){
+          DHputPtr=new DataPutHandlerMF<PerambulatorHandler,FileKey,RecordKey,DataType>(
+                          *this,*fPtr,"Laph--QuarkPeramb","PerambulatorHandlerDataFile");}
+       if ((mode==ReadOnly)||(mode==Check)){
+          bool globalmode=(mode==ReadOnly); 
+          DHgetPtr=new DataGetHandlerMF<PerambulatorHandler,FileKey,RecordKey,DataType>(
+                    *this,*fPtr,"Laph--QuarkPeramb","PerambulatorHandlerDataFile",globalmode);}
+       }
+    }  
  catch(const std::exception& xp){
     errorLaph(make_strf("allocation problem in PerambulatorHandler: %s",xp.what()));}
 
@@ -411,38 +475,35 @@ void PerambulatorHandler::clear()
 			if (QudaInfo::clover_on_device){
 				freeCloverQuda();
 				QudaInfo::clover_on_device=false;}  // delete clover in case next task uses different kappa
-			delete fPtr;
-		
-			if (sGridOutput) {
-				delete fPtrSparseGrid;
-				delete sgHandler; 
-				delete DHputPtrSparseGrid; 
-				delete DHgetPtrSparseGrid; 
-				sgHandler=0;
-				fPtrSparseGrid=0;
-				DHputPtrSparseGrid=0;
-				DHgetPtrSparseGrid=0;
-			}	
-         if (insOutput) {
-            delete fPtrInsertion;
-				delete insHandler; 
-				delete DHputPtrInsertion ; 
-				delete DHgetPtrInsertion; 
-				insHandler=0;
-				fPtrInsertion=0;
-				DHputPtrInsertion=0;
-				DHgetPtrInsertion=0;
-         }
-         if (sGridInsOutput) {
-            delete fPtrSparseGridInsertion;
-				delete sginsHandler; 
-				delete DHputPtrSparseGridInsertion; 
-				delete DHgetPtrSparseGridInsertion; 
-				sginsHandler=0;
-				fPtrSparseGridInsertion=0;
-				DHputPtrSparseGridInsertion=0;
-				DHgetPtrSparseGridInsertion=0;
-         }
+			if ( (*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_STANDARD) == 1){
+            delete fPtr; fPtr=0;
+            delete DHgetPtr; DHgetPtr=0;
+		      delete DHputPtr; DHputPtr=0;}
+			if ( (*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID) == 1){
+            delete fPtrSparseGrid; fPtrSparseGrid=0;
+            delete DHgetPtrSparseGrid; DHgetPtrSparseGrid=0;
+		      delete DHputPtrSparseGrid; DHputPtrSparseGrid=0;}	
+         if ( (*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_SUMMED_INSERTION) == 1){
+            delete fPtrSummedInsertion; fPtrSummedInsertion=0;
+            delete DHgetPtrSummedInsertion; DHgetPtrSummedInsertion=0;
+		      delete DHputPtrSummedInsertion; DHputPtrSummedInsertion=0;}
+         if ( (*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_INSERTION) == 1){
+            delete fPtrLeftInsertion; fPtrLeftInsertion=0;
+            delete DHgetPtrLeftInsertion; DHgetPtrLeftInsertion=0;
+		      delete DHputPtrLeftInsertion; DHputPtrLeftInsertion=0;}
+         if ( (*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_RIGHT_INSERTION) == 1){
+            delete fPtrRightInsertion; fPtrRightInsertion=0;
+            delete DHgetPtrRightInsertion; DHgetPtrRightInsertion=0;
+		      delete DHputPtrRightInsertion; DHputPtrRightInsertion=0;}
+         if ( (*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION) == 1){
+            delete fPtrSparseGridSummedInsertion; fPtrSparseGridSummedInsertion=0;
+            delete DHgetPtrSparseGridSummedInsertion; DHgetPtrSparseGridSummedInsertion=0;
+		      delete DHputPtrSparseGridSummedInsertion; DHputPtrSparseGridSummedInsertion=0;}
+         if ( (*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION) == 1){
+            delete fPtrSparseGridRightInsertion; fPtrSparseGridRightInsertion=0;
+            delete DHgetPtrSparseGridRightInsertion; DHgetPtrSparseGridRightInsertion=0;
+		      delete DHputPtrSparseGridRightInsertion; DHputPtrSparseGridRightInsertion=0;}
+         delete pmapPtr; delete pmapPtr;
 			delete invertPtr;
 			if (preconditioner){
 				destroyMultigridQuda(preconditioner);}
@@ -453,14 +514,12 @@ void PerambulatorHandler::clear()
 		gSmearPtr=0;
 		qSmearPtr=0;
 		qactionPtr=0;
-		fPtr=0;
 		invertPtr=0;
 		mode=ReadOnly;
 		preconditioner=0;
 		disconnectGaugeConfigurationHandler();
 		disconnectQuarkSmearingHandler();
-		delete DHgetPtr; DHgetPtr=0;
-		delete DHputPtr; DHputPtr=0;
+
 	}
 }
 
@@ -701,7 +760,7 @@ void PerambulatorHandler::outputSuffixMap(XMLHandler& xmlout)
 
 bool PerambulatorHandler::isInfoSet() const
 {
- return ((uPtr!=0)&&(gSmearPtr!=0)&&(qSmearPtr!=0)&&(fPtr!=0)
+ return ((uPtr!=0)&&(gSmearPtr!=0)&&(qSmearPtr!=0)//&&(fPtr!=0)
         &&(qactionPtr!=0));
 }
 
@@ -756,7 +815,7 @@ const FileListInfo& PerambulatorHandler::getFileListInfoInsertion() const
 	if (!insOutput)
     errorLaph("There is no insertion file list.");
  check_info_set("getInsertionFileListInfo");
- return *fPtrInsertion;
+ return *fPtrSummedInsertion;
 }
 
 const FileListInfo& PerambulatorHandler::getFileListInfoSparseGridInsertion() const 
@@ -929,6 +988,15 @@ void PerambulatorHandler::computePerambulators(bool extra_soln_check, bool print
  rolex.stop();
  double evreadtime=rolex.getTimeInSeconds();
  printLaph(make_str("All Laph eigvecs read in ",evreadtime," seconds\n"));
+ rolex.reset(); rolex.start();
+ vector<LattField> scaled_evs(laphevs);
+ vector<void*> evList_scaled(nEigs);
+ for (int n=0;n<nEigs;n++){
+    scale_by_ins_times_coord(scaled_evs[n],a1,a2,a3);
+    evList_scaled[n]=(void*)(scaled_evs[n].getDataConstPtr());}
+ rolex.stop();
+ double evreadtime=rolex.getTimeInSeconds();
+ printLaph(make_str("All rescaled Laph eigvecs read in ",evreadtime," seconds\n"));
 
     // set up any preconditioning in the inverter
  double precondtime=0.0;
@@ -944,7 +1012,7 @@ void PerambulatorHandler::computePerambulators(bool extra_soln_check, bool print
 
  double srctime=0.0;
  double invtime=0.0;
- double instime=0.0;
+ double suminstime=0.0;
  double evprojtime=0.0;
  double writetime=0.0;
  int count=0;
@@ -958,8 +1026,8 @@ void PerambulatorHandler::computePerambulators(bool extra_soln_check, bool print
     printLaph(" *");
     printLaph(" *************************************************************");
 
-    computePerambulators(it->src_time,it->tmin,it->tmax,it->src_lapheigvec_indices,evList,print_coeffs,extra_soln_check,
-                         report_gflops,srctime,invtime,instime,evprojtime,writetime,perambComps.useMultiSrcInverter);
+    computePerambulators(it->src_time,it->tmin,it->tmax,it->src_lapheigvec_indices,evList,evList_scaled,extra_soln_check,
+                         report_gflops,srctime,invtime,suminstime,evprojtime,writetime,perambComps.useMultiSrcInverter);
     }
 
  totaltime.stop();
@@ -974,21 +1042,21 @@ void PerambulatorHandler::computePerambulators(bool extra_soln_check, bool print
  if (precond){
     printLaph(make_str("     Inverter preconditioner time = ",precondtime," seconds"));}
  printLaph(make_str("           Total time in inverter = ",invtime," seconds"));
- printLaph(make_str("    Total time applying Insertion = ",instime," seconds"));
+ printLaph(make_str("    Total time applying Insertion = ",suminstime," seconds"));
  printLaph(make_str("Projection onto LapH eigvecs time = ",evprojtime," seconds"));
  printLaph(make_str("          Total file writing time = ",writetime," seconds\n\n"));
 }
 
 
 void PerambulatorHandler::computePerambulators(int src_time, int tmin, int tmax, const set<int>& src_evindices,
-                                               const std::vector<void*>& evList, bool print_coeffs,
-                                               bool extra_soln_check, bool report_gflops, 
+                                               const std::vector<void*>& evList, const std::vector<void*>& evList_scaled,
+                                               bool print_coeffs, bool extra_soln_check, bool report_gflops, 
                                                double& makesrc_time, double& inv_time, double& ins_time,
                                                double& evproj_time, double& write_time,
                                                bool use_multisrc_inverter)
 {
  if (use_multisrc_inverter){
-    computePerambulatorsMS(src_time,tmin,tmax,src_evindices,evList,print_coeffs,extra_soln_check,report_gflops, 
+    computePerambulatorsMS(src_time,tmin,tmax,src_evindices,evList,evList_scaled,extra_soln_check,report_gflops, 
                            makesrc_time,inv_time,ins_time,evproj_time,write_time); }
  else{
     computePerambulatorsSS(src_time,tmin,tmax,src_evindices,evList,print_coeffs,extra_soln_check,report_gflops, 
@@ -1001,9 +1069,9 @@ void PerambulatorHandler::computePerambulators(int src_time, int tmin, int tmax,
     // VERSION which uses multi-src (MS) inverter
 
 void PerambulatorHandler::computePerambulatorsMS(int src_time, int tmin, int tmax, const set<int>& src_evindices,
-                                                 const std::vector<void*>& evList, bool print_coeffs,
-                                                 bool extra_soln_check, bool report_gflops, 
-                                                 double& makesrc_time, double& inv_time, double& ins_time,
+                                                 const std::vector<void*>& evList, const std::vector<void*>& evList_scaled,
+                                                 bool print_coeffs, bool extra_soln_check, bool report_gflops, 
+                                                 double& makesrc_time, double& inv_time, double& sumins_time,
                                                  double& evproj_time, double& write_time)
 {
  StopWatch bulova; bulova.start();
@@ -1039,12 +1107,13 @@ void PerambulatorHandler::computePerambulatorsMS(int src_time, int tmin, int tma
  void** sinks_ptr=(void**)sinkList.data();
  void** srcs_ptr=(void**)srcList.data();
  void** evs_ptr=(void**)evList.data();
+ void** evs_scaled_ptr=(void**)evList_scaled.data();
  void** done_sinks_ptr=(void**)doneList.data();
 
  bulova.stop();
  double srctime=bulova.getTimeInSeconds();
  double invtime=0.0;
- double instime=0.0;
+ double suminstime=0.0;
  double writetime=0.0;
  double evprojtime=0.0;
  int ninv=src_evindices.size();
@@ -1055,14 +1124,23 @@ void PerambulatorHandler::computePerambulatorsMS(int src_time, int tmin, int tma
 
      // get the file key and open file for writing
   FileKey fkey(src_time,srcspin);
-  DHputPtr->open(fkey);
-	if (sGridOutput) DHputPtrSparseGrid->open(fkey);
-   if (insOutput) DHputPtrInsertion->open(fkey);
-   if (sGridInsOutput) DHputPtrSparseGridInsertion->open(fkey);
+  if ( (*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_STANDARD) == 1) 
+   DHputPtr->open(fkey);
+  if ( (*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_SPARSE_GRID) == 1) 
+   DHputPtrSparseGrid->open(fkey);
+  if ( (*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_SUMMED_INSERTION) == 1) 
+   DHputPtrSummedInsertion->open(fkey);
+  if ( (*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_INSERTION) == 1) 
+   DHputPtrLeftInsertion->open(fkey);
+  if ( (*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_RIGHT_INSERTION) == 1) 
+   DHputPtrRightInsertion->open(fkey);
+  if ( (*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION) == 1) 
+   DHputPtrSparseGridRightInsertion->open(fkey);
+  if ( (*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION) == 1) 
+   DHputPtrSparseGridSummedInsertion->open(fkey);
 
   int invcount=0;
   int iSinkBatch = 0;
- 
 
   for (set<int>::const_iterator vt=src_evindices.begin();vt!=src_evindices.end();++vt,++invcount){
 
@@ -1080,7 +1158,13 @@ void PerambulatorHandler::computePerambulatorsMS(int src_time, int tmin, int tma
     else{
         //  initialize source (include gamma_4) in Dirac-Pauli basis, allocate sink
        bulova.reset();bulova.start();
-       make_source(srcBatchData[iSinkBatch],evList[srcev_ind],src_time,srcspin);
+       if  ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_RIGHT_INSERTION)==1){
+            make_source(srcBatchData[iSinkBatch],evList_scaled[srcev_ind],src_time,srcspin);
+       } else if ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION)==1){
+ 	         make_source(srcBatchData[iSinkBatch],evList_scaled[srcev_ind],src_time,srcspin);
+       } else {
+            make_source(srcBatchData[iSinkBatch],evList[srcev_ind],src_time,srcspin);
+       }
        bulova.stop();
        double addsrctime=bulova.getTimeInSeconds();
        printLaph(make_str(" fermion source set up in Dirac-Pauli basis in ",addsrctime," seconds"));
@@ -1119,7 +1203,7 @@ void PerambulatorHandler::computePerambulatorsMS(int src_time, int tmin, int tma
           else{
 
              sinkBatchDoneInds[iSinkDone]=sinkBatchInds[iSink];
-	     sinkBatchIndsMap[iSinkDone]=iSink;
+	          sinkBatchIndsMap[iSinkDone]=iSink;
              doneList[iSinkDone]=(void*)(sinkBatchData[iSink].getDataPtr());
              iSinkDone++;
 
@@ -1145,56 +1229,130 @@ void PerambulatorHandler::computePerambulatorsMS(int src_time, int tmin, int tma
 	       __complex__ double* qudaResPtr = (__complex__ double*)(&qudaRes(0,0,0,0));
 
 	       // sparse grid output to file
-				 if (sGridOutput) {
-                			 gridProject (doneList, sinkBatchDoneInds, nSinks, minTime, maxTime, Textent, print_coeffs, DHputPtrSparseGrid);
+			 if ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID)==1) {
+                gridProject (doneList, sinkBatchDoneInds, nSinks, minTime, maxTime, Textent, print_coeffs, DHputPtrSparseGrid);
 					 bulova.stop();
 					 double otime=bulova.getTimeInSeconds();
 					 printLaph(make_str(" Output of this batch to sparse grid file took ",otime," seconds"));
 					 writetime+=otime;
 					 bulova.reset(); bulova.start();
 				 }
+          // sparse grid right insertion output to file
+          if ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION)==1) {
+                gridProject (doneList, sinkBatchDoneInds, nSinks, minTime, maxTime, Textent, print_coeffs, DHputPtrSparseGridRightInsertion);
+					 bulova.stop();
+					 double otime=bulova.getTimeInSeconds();
+					 printLaph(make_str(" Output of this batch to sparse grid file took ",otime," seconds"));
+					 writetime+=otime;
+					 bulova.reset(); bulova.start();
+				 }
+          // left insertion output to file
+          if ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_INSERTION)==1) {
+	          printLaph("projecting batch of solutions onto insertion rescaled LapH eigenvectors");
+	          
+             laphSinkProject(qudaResPtr, done_sinks_ptr, nSinks, nSinksBatch, evs_scaled_ptr, nEigs, 
+			          nEigQudaBatch, &quda_inv_param, LayoutInfo::getRankLattExtents().data());
 
-	       // do the projections
-	       printLaph("projecting batch of solutions onto LapH eigenvectors");
-	       laphSinkProject(qudaResPtr, done_sinks_ptr, nSinks, nSinksBatch, evs_ptr, nEigs, 
-			       nEigQudaBatch, &quda_inv_param, LayoutInfo::getRankLattExtents().data());
+	          bulova.stop(); 
+	          double addevprojtime=bulova.getTimeInSeconds();
+	          printLaph(make_str(" this batch of projections onto Laph evs took ",addevprojtime," seconds"));
+	          evprojtime+=addevprojtime;
 
-	       bulova.stop(); 
-	       double addevprojtime=bulova.getTimeInSeconds();
-	       printLaph(make_str(" this batch of projections onto Laph evs took ",addevprojtime," seconds"));
-	       evprojtime+=addevprojtime;
+	          // rearrange data then output to file
+	          bulova.reset(); bulova.start();
+	          for (int iSink=0; iSink<nSinks; ++iSink) {
+		          for (int tind=minTime;tind<=maxTime;tind++){
+			   			 int t = (tind+Textent)%Textent; 
+			          for (int iSpin=0; iSpin<int(Nspin); ++iSpin) {
+			   	       vector<dcmplx> quark_sink(nEigs);
+			   	       for (int iEv=0; iEv<nEigs; ++iEv) {
+			   		       quark_sink[iEv] = soln_rescale*qudaRes(iSpin, t, iEv, iSink);}
+		   		       DHputPtrLeftInsertion->putData(RecordKey(iSpin+1,t,sinkBatchDoneInds[iSink]),quark_sink);
+	   			       if (print_coeffs){
+		   			       printLaph(make_strf("srcev_index = %d, spin = %d, time = %d",sinkBatchDoneInds[iSink],iSpin+1,t));
+			   		       for (int n=0;n<nEigs;n++){
+				   		       printLaph(make_strf("coef for eigenlevel %d = (%14.8f, %14.8f)",
+					   				       n,real(quark_sink[n]),imag(quark_sink[n])));}}}}}
+					          bulova.stop();
+					          double otime=bulova.getTimeInSeconds();
+					          printLaph(make_str(" Output of this batch to file took ",otime," seconds"));
+					          writetime+=otime;
+             }
+	       // do the Laph - projections and standard output
+          if ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_STANDARD)==1){
+	          printLaph("projecting batch of solutions onto LapH eigenvectors");
+	          laphSinkProject(qudaResPtr, done_sinks_ptr, nSinks, nSinksBatch, evs_ptr, nEigs, 
+			          nEigQudaBatch, &quda_inv_param, LayoutInfo::getRankLattExtents().data());
 
-	       // rearrange data then output to file
-	       bulova.reset(); bulova.start();
-	       for (int iSink=0; iSink<nSinks; ++iSink) {
-		       for (int tind=minTime;tind<=maxTime;tind++){
-						 int t = (tind+Textent)%Textent; 
-			       for (int iSpin=0; iSpin<int(Nspin); ++iSpin) {
-				       vector<dcmplx> quark_sink(nEigs);
-				       for (int iEv=0; iEv<nEigs; ++iEv) {
-					       quark_sink[iEv] = soln_rescale*qudaRes(iSpin, t, iEv, iSink);}
-				       DHputPtr->putData(RecordKey(iSpin+1,t,sinkBatchDoneInds[iSink]),quark_sink);
-				       if (print_coeffs){
-					       printLaph(make_strf("srcev_index = %d, spin = %d, time = %d",sinkBatchDoneInds[iSink],iSpin+1,t));
-					       for (int n=0;n<nEigs;n++){
-						       printLaph(make_strf("coef for eigenlevel %d = (%14.8f, %14.8f)",
-									       n,real(quark_sink[n]),imag(quark_sink[n])));}}}}}
-					       bulova.stop();
-					       double otime=bulova.getTimeInSeconds();
-					       printLaph(make_str(" Output of this batch to file took ",otime," seconds"));
-					       writetime+=otime;
-         
-          // carry out insertion 
-          if (insOutput) {
+	          bulova.stop(); 
+	          double addevprojtime=bulova.getTimeInSeconds();
+	          printLaph(make_str(" this batch of projections onto Laph evs took ",addevprojtime," seconds"));
+	          evprojtime+=addevprojtime;
+
+	          // rearrange data then output to file
+	          bulova.reset(); bulova.start();
+	          for (int iSink=0; iSink<nSinks; ++iSink) {
+		          for (int tind=minTime;tind<=maxTime;tind++){
+			   			 int t = (tind+Textent)%Textent; 
+			          for (int iSpin=0; iSpin<int(Nspin); ++iSpin) {
+			   	       vector<dcmplx> quark_sink(nEigs);
+			   	       for (int iEv=0; iEv<nEigs; ++iEv) {
+			   		       quark_sink[iEv] = soln_rescale*qudaRes(iSpin, t, iEv, iSink);}
+		   		       DHputPtr->putData(RecordKey(iSpin+1,t,sinkBatchDoneInds[iSink]),quark_sink);
+	   			       if (print_coeffs){
+		   			       printLaph(make_strf("srcev_index = %d, spin = %d, time = %d",sinkBatchDoneInds[iSink],iSpin+1,t));
+			   		       for (int n=0;n<nEigs;n++){
+				   		       printLaph(make_strf("coef for eigenlevel %d = (%14.8f, %14.8f)",
+					   				       n,real(quark_sink[n]),imag(quark_sink[n])));}}}}}
+					          bulova.stop();
+					          double otime=bulova.getTimeInSeconds();
+					          printLaph(make_str(" Output of this batch to file took ",otime," seconds"));
+					          writetime+=otime;
+             }
+          // right insertion output to file
+          if ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_RIGHT_INSERTION)==1){
+	          printLaph("projecting batch of solutions onto LapH eigenvectors");
+	          laphSinkProject(qudaResPtr, done_sinks_ptr, nSinks, nSinksBatch, evs_ptr, nEigs, 
+			          nEigQudaBatch, &quda_inv_param, LayoutInfo::getRankLattExtents().data());
+
+	          bulova.stop(); 
+	          double addevprojtime=bulova.getTimeInSeconds();
+	          printLaph(make_str(" this batch of projections onto Laph evs took ",addevprojtime," seconds"));
+	          evprojtime+=addevprojtime;
+
+	          // rearrange data then output to file
+	          bulova.reset(); bulova.start();
+	          for (int iSink=0; iSink<nSinks; ++iSink) {
+		          for (int tind=minTime;tind<=maxTime;tind++){
+			   			 int t = (tind+Textent)%Textent; 
+			          for (int iSpin=0; iSpin<int(Nspin); ++iSpin) {
+			   	       vector<dcmplx> quark_sink(nEigs);
+			   	       for (int iEv=0; iEv<nEigs; ++iEv) {
+			   		       quark_sink[iEv] = soln_rescale*qudaRes(iSpin, t, iEv, iSink);}
+		   		       DHputPtrRightInsertion->putData(RecordKey(iSpin+1,t,sinkBatchDoneInds[iSink]),quark_sink);
+	   			       if (print_coeffs){
+		   			       printLaph(make_strf("srcev_index = %d, spin = %d, time = %d",sinkBatchDoneInds[iSink],iSpin+1,t));
+			   		       for (int n=0;n<nEigs;n++){
+				   		       printLaph(make_strf("coef for eigenlevel %d = (%14.8f, %14.8f)",
+					   				       n,real(quark_sink[n]),imag(quark_sink[n])));}}}}}
+					          bulova.stop();
+					          double otime=bulova.getTimeInSeconds();
+					          printLaph(make_str(" Output of this batch to file took ",otime," seconds"));
+					          writetime+=otime;
+             }
+
+             // carry out summed insertion 
+          if (((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_SUMMED_INSERTION)==1)||
+              ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION)==1)) {
              bulova.reset(); bulova.start();
              for (int iSink=0; iSink<nSinks; ++iSink){
                 // applyInsertion(srcBatchData[iSink],sinkBatchData[sinkBatchIndsMap[iSink]]); // Insertion-Multiplication is performed on CPU
-		 MatQuda(srcList[iSink],doneList[iSink],&quda_ins_param);
-	     }
+		          MatQuda(srcList[iSink],doneList[iSink],&quda_ins_param);
+               }
              bulova.stop(); 
-             double addinstime=bulova.getTimeInSeconds();
-             instime+=addinstime;
-             printLaph(make_str(" Time for ",nSinks," insertions was ",addinstime," seconds"));
+             double addsuminstime=bulova.getTimeInSeconds();
+             suminstime+=addsuminstime;
+             printLaph(make_str(" Time for ",nSinks," insertions was ",addsuminstime," seconds"));
              bulova.reset(); bulova.start();
             
              // carry out second inversion 
@@ -1241,60 +1399,63 @@ void PerambulatorHandler::computePerambulatorsMS(int src_time, int tmin, int tma
                 bulova.reset(); bulova.start();
                 int nSinksBatch=std::min(nSinks,int(nSinkQudaBatch));
 
-               // sparse grid insertion output to file
-                if (sGridInsOutput) {
-                   gridProject (doneList, sinkBatchDoneInds, nSinks, minTime, maxTime, Textent, print_coeffs, DHputPtrSparseGridInsertion);
+               // sparse grid summed insertion output to file
+                if ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION)==1) {
+                   gridProject (doneList, sinkBatchDoneInds, nSinks, minTime, maxTime, Textent, print_coeffs, DHputPtrSparseGridSummedInsertion);
 					    bulova.stop();
 					    double otime=bulova.getTimeInSeconds();
 					    printLaph(make_str(" Output of this batch to sparse grid insertion file took ",otime," seconds"));
 					    writetime+=otime;
 					    bulova.reset(); bulova.start();
-				    }
+				       } // end sparse grid summed insertion output to file 
 
-                // do the projections
-                printLaph("projecting batch of insertion solutions onto LapH eigenvectors");
-                laphSinkProject(qudaResPtr, done_sinks_ptr, nSinks, nSinksBatch, evs_ptr, nEigs, 
-                      nEigQudaBatch, &quda_inv_param, LayoutInfo::getRankLattExtents().data());
+                // do Laph - projections and summed insertion output to file
+                if ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_SUMMED_INSERTION)==1) {
+                   printLaph("projecting batch of insertion solutions onto LapH eigenvectors");
+                   laphSinkProject(qudaResPtr, done_sinks_ptr, nSinks, nSinksBatch, evs_ptr, nEigs, 
+                         nEigQudaBatch, &quda_inv_param, LayoutInfo::getRankLattExtents().data());
  
-                bulova.stop(); 
-                double addevprojtime=bulova.getTimeInSeconds();
-                printLaph(make_str(" this batch of projections onto Laph evs took ",addevprojtime," seconds"));
-                evprojtime+=addevprojtime;
+                   bulova.stop(); 
+                   double addevprojtime=bulova.getTimeInSeconds();
+                   printLaph(make_str(" this batch of projections onto Laph evs took ",addevprojtime," seconds"));
+                   evprojtime+=addevprojtime;
  
-                // rearrange data then output to file
-                bulova.reset(); bulova.start();
-                for (int iSink=0; iSink<nSinks; ++iSink) {
-                   for (int tind=minTime;tind<=maxTime;tind++){
-                         int t = (tind+Textent)%Textent; 
-                      for (int iSpin=0; iSpin<int(Nspin); ++iSpin) {
-                         vector<dcmplx> quark_sink(nEigs);
-                         for (int iEv=0; iEv<nEigs; ++iEv) {
-                            quark_sink[iEv] = soln_rescale*qudaRes(iSpin, t, iEv, iSink);}
-                         DHputPtrInsertion->putData(RecordKey(iSpin+1,t,sinkBatchDoneInds[iSink]),quark_sink);
-                         if (print_coeffs){
-                            printLaph(make_strf("srcev_index = %d, spin = %d, time = %d",sinkBatchDoneInds[iSink],iSpin+1,t));
-                            for (int n=0;n<nEigs;n++){
-                               printLaph(make_strf("coef for eigenlevel %d = (%14.8f, %14.8f)",
-                                        n,real(quark_sink[n]),imag(quark_sink[n])));}}}}}
-                            bulova.stop();
-                            double otime=bulova.getTimeInSeconds();
-                            printLaph(make_str(" Output of this batch to file took ",otime," seconds"));
-                            writetime+=otime;
-             }
+                   // rearrange data then output to file
+                   bulova.reset(); bulova.start();
+                   for (int iSink=0; iSink<nSinks; ++iSink) {
+                      for (int tind=minTime;tind<=maxTime;tind++){
+                            int t = (tind+Textent)%Textent; 
+                         for (int iSpin=0; iSpin<int(Nspin); ++iSpin) {
+                            vector<dcmplx> quark_sink(nEigs);
+                            for (int iEv=0; iEv<nEigs; ++iEv) {
+                               quark_sink[iEv] = soln_rescale*qudaRes(iSpin, t, iEv, iSink);}
+                            DHputPtrInsertion->putData(RecordKey(iSpin+1,t,sinkBatchDoneInds[iSink]),quark_sink);
+                            if (print_coeffs){
+                               printLaph(make_strf("srcev_index = %d, spin = %d, time = %d",sinkBatchDoneInds[iSink],iSpin+1,t));
+                               for (int n=0;n<nEigs;n++){
+                                  printLaph(make_strf("coef for eigenlevel %d = (%14.8f, %14.8f)",
+                                           n,real(quark_sink[n]),imag(quark_sink[n])));}}}}}
+                               bulova.stop();
+                               double otime=bulova.getTimeInSeconds();
+                               printLaph(make_str(" Output of this batch to file took ",otime," seconds"));
+                               writetime+=otime;
+                   } // end summed insertion projection output to file
+             } // n_Sinks after second inversion > 0
+         } // carry out summed insertion
+      } // n_Sinks after first inversion > 0
+   }  // batch end
 
-         }}}  // 	batch end
-
-    DHputPtr->flush();
-	  if (sGridOutput)	
-			DHputPtrSparseGrid->flush();
-     if (insOutput)
-         DHputPtrInsertion->flush();
-     if (sGridInsOutput)
-         DHputPtrSparseGridInsertion->flush();
+    if ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_STANDARD)==1) DHputPtr->flush();
+	 if ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID)==1) DHputPtrSparseGrid->flush();
+    if ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_SUMMED_INSERTION)==1) DHputPtrSummedInsertion->flush();
+    if ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_INSERTION)==1) DHputPtrLeftInsertion->flush();
+    if ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_RIGHT_INSERTION)==1) DHputPtrRightInsertion->flush();
+    if ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION)==1) DHputPtrSparseGridRightInsertion->flush();
+    if ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION)==1) DHputPtrSparseGridSummedInsertion->flush();
 	}}   // src_ind, src_spin loop end
 
  inv_time+=invtime;
- ins_time+=instime;
+ sumins_time+=suminstime;
  makesrc_time+=srctime; 
  evproj_time+=evprojtime; 
  write_time+=writetime;
@@ -1338,7 +1499,7 @@ void PerambulatorHandler::computePerambulatorsSS(int src_time, int tmin, int tma
  bulova.stop();
  double srctime=bulova.getTimeInSeconds();
  double invtime=0.0;
- double instime=0.0;
+ double suminstime=0.0;
  double writetime=0.0;
  double evprojtime=0.0;
  int ninv=src_evindices.size();
@@ -1492,9 +1653,9 @@ void PerambulatorHandler::computePerambulatorsSS(int src_time, int tmin, int tma
                 void *spinor_snk = (void*)(sinkBatchData[iSink].getDataPtr()); 
 		MatQuda(spinor_src,spinor_snk,&quda_ins_param);
                 bulova.stop();
-                double addinstime=bulova.getTimeInSeconds();
-                instime+=addinstime;
-                printLaph(make_str(" Insertion Time was ",addinstime," seconds"));
+                double addsuminstime=bulova.getTimeInSeconds();
+                suminstime+=addsuminstime;
+                printLaph(make_str(" Insertion Time was ",addsuminstime," seconds"));
                 bulova.reset(); bulova.start();
 		
 		// carry out second inversion
@@ -1583,7 +1744,7 @@ void PerambulatorHandler::computePerambulatorsSS(int src_time, int tmin, int tma
     	}}   // src_ind, src_spin loop end
 
  inv_time+=invtime;
- ins_time+=instime;
+ ins_time+=suminstime;
  makesrc_time+=srctime; 
  evproj_time+=evprojtime; 
  write_time+=writetime;
@@ -1662,6 +1823,37 @@ void PerambulatorHandler::make_source(LattField& ferm_src, const void* ev_src_pt
           cblas_caxpy(n2,(fcmplx*)(zrho),(fcmplx*)(x2),incx,(fcmplx*)(y2),incy);}
        x1+=cbytes; y1+=cbytes; x2+=cbytes; y2+=cbytes;}}
  printLaph("Source for this inversion created");
+}
+
+template <typename T>   // T = double or float
+void PerambulatorHandler::scale_by_ins_times_coord(T* data, int ncmplx_per_site, std::vector<int>& coeff)
+{
+ const std::vector<int>& ext=LayoutInfo::getRankLattExtents();
+ const std::vector<int>& cc=LayoutInfo::getMyCommCoords();
+ const int nsites=LayoutInfo::getRankLatticeNumSites();
+ const int sp=LayoutInfo::getMyStartParity();
+ const int X0=cc[0]*ext[0], Y0=cc[1]*ext[1], Z0=cc[2]*ext[2];
+
+ std::vector<int> loc(4);
+ for (loc[3]=0;loc[3]<ext[3];++loc[3])
+ for (loc[2]=0;loc[2]<ext[2];++loc[2])
+ for (loc[1]=0;loc[1]<ext[1];++loc[1])
+ for (loc[0]=0;loc[0]<ext[0];++loc[0]){
+    long site=LayoutInfo::linearSiteIndex_evenodd(loc,ext,nsites,sp);
+    const T s=T(coeff[0]*(X0+loc[0])+coeff[1]*(Y0+loc[1])+coeff[2]*(Z0+loc[2]));
+    T* p=data+2*site*ncmplx_per_site;
+    for (int k=0;k<ncmplx_per_site;++k){
+       T re=p[2*k], im=p[2*k+1];
+       p[2*k]  =-s*im;
+       p[2*k+1]= s*re;}}
+}
+
+void PerambulatorHandler::scale_by_ins_times_coord(LattField& field, std::vector<int>& coeff)
+{
+ int n=field.elemsPerSite();
+ bool dp=(field.bytesPerWord()==sizeof(std::complex<double>));
+ if (dp) scale_by_ins_times_coord(reinterpret_cast<double*>(field.getDataPtr()),n,coeff);
+ else    scale_by_ins_times_coord(reinterpret_cast<float*>(field.getDataPtr()),n,coeff);
 }
 
 template <typename H>
