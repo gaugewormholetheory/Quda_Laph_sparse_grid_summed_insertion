@@ -16,23 +16,23 @@ typedef std::complex<float>  fcmplx;
 
 namespace LaphEnv {
 
-static PerambulatorType toPerambulatorType(const std::string& s)
+PerambulatorHandler::PerambulatorType PerambulatorHandler::toPerambulatorType(const std::string& s)
    {
       if (s=="PERAMBULATOR_STANDARD"){
-         printLaph(s + " output enabled."); return PERAMBULATOR_STANDARD;}                      
+         printLaph(s + " output enabled."); return PerambulatorHandler::PerambulatorType::PERAMBULATOR_STANDARD;}                      
       if (s=="PERAMBULATOR_LEFT_SPARSE_GRID"){
-         printLaph(s + " output enabled."); return PERAMBULATOR_LEFT_SPARSE_GRID;}              
+         printLaph(s + " output enabled."); return PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID;}              
       if (s=="PERAMBULATOR_LEFT_INSERTION"){
-         printLaph(s + " output enabled."); return PERAMBULATOR_LEFT_INSERTION;}                  
+         printLaph(s + " output enabled."); return PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_INSERTION;}                  
       if (s=="PERAMBULATOR_RIGHT_INSERTION"){
-         printLaph(s + " output enabled."); return PERAMBULATOR_RIGHT_INSERTION;}
+         printLaph(s + " output enabled."); return PerambulatorHandler::PerambulatorType::PERAMBULATOR_RIGHT_INSERTION;}
       if (s=="PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION"){
-         printLaph(s + " output enabled."); return PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION;} 
+         printLaph(s + " output enabled."); return PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION;} 
       if (s=="PERAMBULATOR_SUMMED_INSERTION") {
-         printLaph(s + " output enabled."); return PERAMBULATOR_SUMMED_INSERTION;}                 
+         printLaph(s + " output enabled."); return PerambulatorHandler::PerambulatorType::PERAMBULATOR_SUMMED_INSERTION;}                 
       if (s=="PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION"){
-         printLaph(s + " output enabled."); return PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION;}
-      return PERAMBULATOR_INVALID_ENUM;
+         printLaph(s + " output enabled."); return PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION;}
+      return PerambulatorHandler::PerambulatorType::PERAMBULATOR_INVALID_ENUM;
    }
    
 // *************************************************************************
@@ -121,7 +121,7 @@ PerambulatorHandler::PerambulatorHandler()
             DHputPtr(0), DHputPtrSparseGrid(0), DHputPtrSummedInsertion(0), DHputPtrLeftInsertion(0), 
             DHputPtrRightInsertion(0), DHputPtrSparseGridSummedInsertion(0), DHputPtrSparseGridRightInsertion(0), 
             DHgetPtr(0), DHgetPtrSparseGrid(0), DHgetPtrSummedInsertion(0), DHgetPtrLeftInsertion(0), 
-            DHgetPtrRightInsertion(0), DHgetPtrSparseGridSummedInsertion(0), DHputPtrSparseGridRightInsertion(0) {}
+            DHgetPtrRightInsertion(0), DHgetPtrSparseGridSummedInsertion(0), DHgetPtrSparseGridRightInsertion(0) {}
 
 
 PerambulatorHandler::PerambulatorHandler(const GaugeConfigurationInfo& gaugeinfo,
@@ -136,7 +136,7 @@ PerambulatorHandler::PerambulatorHandler(const GaugeConfigurationInfo& gaugeinfo
             DHputPtrLeftInsertion(0), DHputPtrRightInsertion(0), DHputPtrSparseGridSummedInsertion(0), 
             DHputPtrSparseGridRightInsertion(0), DHgetPtr(0), DHgetPtrSparseGrid(0), DHgetPtrSummedInsertion(0), 
             DHgetPtrLeftInsertion(0), DHgetPtrRightInsertion(0), DHgetPtrSparseGridSummedInsertion(0), 
-            DHputPtrSparseGridRightInsertion(0){
+            DHgetPtrSparseGridRightInsertion(0){
  set_info(gaugeinfo,gluonsmear,quarksmear,quark,pmap,smeared_quark_filestub,
 		 upper_spin_components_only,gauge_str,in_mode);
 }
@@ -154,7 +154,7 @@ PerambulatorHandler::PerambulatorHandler(const GaugeConfigurationInfo& gaugeinfo
             DHputPtrLeftInsertion(0), DHputPtrRightInsertion(0), DHputPtrSparseGridSummedInsertion(0), 
             DHputPtrSparseGridRightInsertion(0), DHgetPtr(0), DHgetPtrSparseGrid(0), DHgetPtrSummedInsertion(0), 
             DHgetPtrLeftInsertion(0), DHgetPtrRightInsertion(0), DHgetPtrSparseGridSummedInsertion(0), 
-            DHputPtrSparseGridRightInsertion(0){
+            DHgetPtrSparseGridRightInsertion(0){
  set_info(gaugeinfo,gluonsmear,quarksmear,quark,rsgrid,pmap,smeared_quark_filestub,
    upper_spin_components_only,gauge_str,in_mode);
 }
@@ -172,7 +172,7 @@ PerambulatorHandler::PerambulatorHandler(const GaugeConfigurationInfo& gaugeinfo
             DHputPtrLeftInsertion(0), DHputPtrRightInsertion(0), DHputPtrSparseGridSummedInsertion(0), 
             DHputPtrSparseGridRightInsertion(0), DHgetPtr(0), DHgetPtrSparseGrid(0), DHgetPtrSummedInsertion(0), 
             DHgetPtrLeftInsertion(0), DHgetPtrRightInsertion(0), DHgetPtrSparseGridSummedInsertion(0), 
-            DHputPtrSparseGridRightInsertion(0){
+            DHgetPtrSparseGridRightInsertion(0){
  set_info(gaugeinfo,gluonsmear,quarksmear,quark,insinfo,pmap,smeared_quark_filestub,
    upper_spin_components_only,gauge_str,in_mode);
 }
@@ -191,7 +191,7 @@ PerambulatorHandler::PerambulatorHandler(const GaugeConfigurationInfo& gaugeinfo
             DHputPtrLeftInsertion(0), DHputPtrRightInsertion(0), DHputPtrSparseGridSummedInsertion(0), 
             DHputPtrSparseGridRightInsertion(0), DHgetPtr(0), DHgetPtrSparseGrid(0), DHgetPtrSummedInsertion(0), 
             DHgetPtrLeftInsertion(0), DHgetPtrRightInsertion(0), DHgetPtrSparseGridSummedInsertion(0), 
-            DHputPtrSparseGridRightInsertion(0){
+            DHgetPtrSparseGridRightInsertion(0){
  set_info(gaugeinfo,gluonsmear,quarksmear,quark,rsgrid,insinfo,pmap,
           smeared_quark_filestub,upper_spin_components_only,gauge_str,in_mode);
 }
@@ -200,7 +200,7 @@ void PerambulatorHandler::setInfo(const GaugeConfigurationInfo& gaugeinfo,
                                   const GluonSmearingInfo& gluonsmear,
                                   const QuarkSmearingInfo& quarksmear,
                                   const QuarkActionInfo& quark,
-											 const RandomSparseGrid& rsgrid,
+				  const RandomSparseGrid& rsgrid,
                                   const std::map<PerambulatorHandler::PerambulatorType, FileListInfo>& pmap,
                                   const string& smeared_quark_filestub,
                                   bool upper_spin_components_only,
@@ -229,7 +229,7 @@ void PerambulatorHandler::setInfo(const GaugeConfigurationInfo& gaugeinfo,
                                   const GluonSmearingInfo& gluonsmear,
                                   const QuarkSmearingInfo& quarksmear,
                                   const QuarkActionInfo& quark,
-											 const InsertionInfo& insinfo,
+			  	  const InsertionInfo& insinfo,
                                   const std::map<PerambulatorHandler::PerambulatorType, FileListInfo>& pmap,
                                   const string& smeared_quark_filestub,
                                   bool upper_spin_components_only,
@@ -292,13 +292,13 @@ void PerambulatorHandler::set_info(const GaugeConfigurationInfo& gaugeinfo,
                                    const GluonSmearingInfo& gluonsmear,
                                    const QuarkSmearingInfo& quarksmear,
                                    const QuarkActionInfo& quark,
-											  const InsertionInfo& insinfo,
+				   const InsertionInfo& insinfo,
                                    const std::map<PerambulatorHandler::PerambulatorType, FileListInfo>& pmap,
                                    const string& smeared_quark_filestub,
                                    bool upper_spin_components_only,
                                    const string& gauge_str, Mode in_mode)
 {
- set_info(gaugeinfo,gluonsmear,quarksmear,quark,flist,smeared_quark_filestub,
+ set_info(gaugeinfo,gluonsmear,quarksmear,quark,pmap,smeared_quark_filestub,
 		 upper_spin_components_only,gauge_str,in_mode);
 
  try{    
@@ -408,7 +408,7 @@ void PerambulatorHandler::set_info(const GaugeConfigurationInfo& gaugeinfo,
                        *sginsHandler,*fPtrSparseGridSummedInsertion,"Laph--SparseGridQuarkPeramb","PerambulatorHandlerSparseGridDataFile",globalmode);}
        }
 	 if ( pmap.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION)==1){
-       fPtrSparseGridRightInsertion = new FileListInfo( pmap.at(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION) );
+       fPtrSparseGridRightInsertion = new FileListInfo( pmap.at(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION) );
 	    if ((mode==Compute)||(mode==Merge)){
 			 DHputPtrSparseGridRightInsertion=new DataPutHandlerMF<SparseGridInsertionHandler,FileKey,RecordKey,DataType>(
                        *sginsHandler,*fPtrSparseGridRightInsertion,"Laph--SparseGridQuarkPeramb","PerambulatorHandlerSparseGridDataFile");}
@@ -797,45 +797,86 @@ const QuarkActionInfo& PerambulatorHandler::getQuarkActionInfo() const
 }
 
 const FileListInfo& PerambulatorHandler::getFileListInfo() const 
-{
+{ if ( (*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_STANDARD)!=1)
+	errorLaph("There is no standard file list.");
  check_info_set("getFileListInfo");
  return *fPtr;
 }
 
 const FileListInfo& PerambulatorHandler::getFileListInfoSparseGrid() const 
 {
-	if (!sGridOutput)
+ if ( (*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID)!=1)
     errorLaph("There is no sparse grid file list.");
- check_info_set("getSparseGridFileListInfo"); 
+ check_info_set("getFileListInfoSparseGrid"); 
  return *fPtrSparseGrid;
 }
 
-const FileListInfo& PerambulatorHandler::getFileListInfoInsertion() const 
+const FileListInfo& PerambulatorHandler::getFileListInfoSummedInsertion() const 
 {
-	if (!insOutput)
-    errorLaph("There is no insertion file list.");
- check_info_set("getInsertionFileListInfo");
+ if ( (*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_SUMMED_INSERTION)!=1)
+    errorLaph("There is no summed insertion file list.");
+ check_info_set("getFileListInfoSummedInsertion");
  return *fPtrSummedInsertion;
 }
 
-const FileListInfo& PerambulatorHandler::getFileListInfoSparseGridInsertion() const 
+const FileListInfo& PerambulatorHandler::getFileListInfoLeftInsertion() const
 {
-	if (!sGridInsOutput)
-    errorLaph("There is no sparse grid insertion file list.");
- check_info_set("getSparseGridInsertionFileListInfo");
- return *fPtrSparseGridInsertion;
+ if ( (*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_INSERTION)!=1)
+     errorLaph("There is no left insertion file list.");
+ check_info_set("getFileListInfoLeftInsertion");
+ return *fPtrLeftInsertion;
+}
+
+const FileListInfo& PerambulatorHandler::getFileListInfoRightInsertion() const
+{
+ if ( (*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_RIGHT_INSERTION)!=1)
+     errorLaph("There is no right insertion file list.");
+ check_info_set("getFileListInfoRightInsertion");
+ return *fPtrRightInsertion;
+}
+
+const FileListInfo& PerambulatorHandler::getFileListInfoSparseGridSummedInsertion() const 
+{
+if ( (*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION)!=1)    
+     errorLaph("There is no sparse grid summed insertion file list.");
+ check_info_set("getFileListInfoSparseGridSummedInsertion");
+ return *fPtrSparseGridSummedInsertion;
+}
+
+const FileListInfo& PerambulatorHandler::getFileListInfoSparseGridRightInsertion() const
+{       
+ if ( (*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION)!=1)
+      errorLaph("There is no sparse grid right insertion file list.");
+ check_info_set("getFileListInfoSparseGridRightInsertion");
+ return *fPtrSparseGridRightInsertion;
+}
+
+bool PerambulatorHandler::standardOutput() const {
+        return ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_STANDARD)!=1);         
 }
 
 bool PerambulatorHandler::sparseGridOutput() const { 
-	return sGridOutput; 
+	return ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID)!=1); 
 }
 
-bool PerambulatorHandler::insertionOutput() const {
-   return insOutput;
+bool PerambulatorHandler::summedInsertionOutput() const {
+   return ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_SUMMED_INSERTION)!=1);
 }
 
-bool PerambulatorHandler::sparseGridInsertionOutput() const {
-   return sGridInsOutput;
+bool PerambulatorHandler::leftInsertionOutput() const {
+   return ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_INSERTION)!=1);
+}
+
+bool PerambulatorHandler::rightInsertionOutput() const {
+   return ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_RIGHT_INSERTION)!=1);
+}
+
+bool PerambulatorHandler::sparseGridsummedInsertionOutput() const {
+   return ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION)!=1);
+}
+
+bool PerambulatorHandler::sparseGridrightInsertionOutput() const {
+    return ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION)!=1);
 }
 
 uint PerambulatorHandler::getNumberOfLaplacianEigenvectors() const
@@ -992,11 +1033,14 @@ void PerambulatorHandler::computePerambulators(bool extra_soln_check, bool print
  vector<LattField> scaled_evs(laphevs);
  vector<void*> evList_scaled(nEigs);
  for (int n=0;n<nEigs;n++){
-    scale_by_ins_times_coord(scaled_evs[n],a1,a2,a3);
+    if (insHandler) { 
+    	PerambulatorHandler::scale_by_ins_times_coord(scaled_evs[n],insHandler->getInsertion().getTwistVector());
+    } else if (sginsHandler) {
+	PerambulatorHandler::scale_by_ins_times_coord(scaled_evs[n],sginsHandler->getInsertion().getTwistVector());}
     evList_scaled[n]=(void*)(scaled_evs[n].getDataConstPtr());}
  rolex.stop();
- double evreadtime=rolex.getTimeInSeconds();
- printLaph(make_str("All rescaled Laph eigvecs read in ",evreadtime," seconds\n"));
+ double evscaledreadtime=rolex.getTimeInSeconds();
+ printLaph(make_str("All rescaled Laph eigvecs read in ",evscaledreadtime," seconds\n"));
 
     // set up any preconditioning in the inverter
  double precondtime=0.0;
@@ -1008,7 +1052,7 @@ void PerambulatorHandler::computePerambulators(bool extra_soln_check, bool print
     printLaph(make_str(" Time to set up inverter preconditioner was ",precondtime," seconds"));}
  
     // set up Insertion QudaInversionParam
-    if( insOutput ) { (insHandler->getInsertion()).setQudaInvertParam(quda_ins_param,*qactionPtr); }
+    if( insHandler ) { (insHandler->getInsertion()).setQudaInvertParam(quda_ins_param,*qactionPtr); }
 
  double srctime=0.0;
  double invtime=0.0;
@@ -1026,7 +1070,7 @@ void PerambulatorHandler::computePerambulators(bool extra_soln_check, bool print
     printLaph(" *");
     printLaph(" *************************************************************");
 
-    computePerambulators(it->src_time,it->tmin,it->tmax,it->src_lapheigvec_indices,evList,evList_scaled,extra_soln_check,
+    computePerambulators(it->src_time,it->tmin,it->tmax,it->src_lapheigvec_indices,evList,evList_scaled,print_coeffs,extra_soln_check,
                          report_gflops,srctime,invtime,suminstime,evprojtime,writetime,perambComps.useMultiSrcInverter);
     }
 
@@ -1056,7 +1100,7 @@ void PerambulatorHandler::computePerambulators(int src_time, int tmin, int tmax,
                                                bool use_multisrc_inverter)
 {
  if (use_multisrc_inverter){
-    computePerambulatorsMS(src_time,tmin,tmax,src_evindices,evList,evList_scaled,extra_soln_check,report_gflops, 
+    computePerambulatorsMS(src_time,tmin,tmax,src_evindices,evList,evList_scaled,print_coeffs,extra_soln_check,report_gflops, 
                            makesrc_time,inv_time,ins_time,evproj_time,write_time); }
  else{
     computePerambulatorsSS(src_time,tmin,tmax,src_evindices,evList,print_coeffs,extra_soln_check,report_gflops, 
@@ -1126,7 +1170,7 @@ void PerambulatorHandler::computePerambulatorsMS(int src_time, int tmin, int tma
   FileKey fkey(src_time,srcspin);
   if ( (*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_STANDARD) == 1) 
    DHputPtr->open(fkey);
-  if ( (*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_SPARSE_GRID) == 1) 
+  if ( (*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID) == 1) 
    DHputPtrSparseGrid->open(fkey);
   if ( (*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_SUMMED_INSERTION) == 1) 
    DHputPtrSummedInsertion->open(fkey);
@@ -1429,7 +1473,7 @@ void PerambulatorHandler::computePerambulatorsMS(int src_time, int tmin, int tma
                             vector<dcmplx> quark_sink(nEigs);
                             for (int iEv=0; iEv<nEigs; ++iEv) {
                                quark_sink[iEv] = soln_rescale*qudaRes(iSpin, t, iEv, iSink);}
-                            DHputPtrInsertion->putData(RecordKey(iSpin+1,t,sinkBatchDoneInds[iSink]),quark_sink);
+                            DHputPtrSummedInsertion->putData(RecordKey(iSpin+1,t,sinkBatchDoneInds[iSink]),quark_sink);
                             if (print_coeffs){
                                printLaph(make_strf("srcev_index = %d, spin = %d, time = %d",sinkBatchDoneInds[iSink],iSpin+1,t));
                                for (int n=0;n<nEigs;n++){
@@ -1504,15 +1548,15 @@ void PerambulatorHandler::computePerambulatorsSS(int src_time, int tmin, int tma
  double evprojtime=0.0;
  int ninv=src_evindices.size();
 
- if (sGridOutput)
+ if (sgHandler)
 	 printLaph("\nIn computeSS: sparse grid enabled.");
  else 
 	 printLaph("\nIn computeSS: sparse grid disabled.");
- if (insOutput)
+ if (insHandler)
 	 printLaph("\nIn computeSS: insertion enabled.");
  else
          printLaph("\nIn computeSS: insertion disabled.");
- if (sGridInsOutput)
+ if (sginsHandler)
          printLaph("\nIn computeSS: sparse grid projected insertion enabled.");
  else
          printLaph("\nIn computeSS: sparse grid projected insertion disabled.");
@@ -1524,10 +1568,10 @@ void PerambulatorHandler::computePerambulatorsSS(int src_time, int tmin, int tma
      // get the file key and open file for writing
   FileKey fkey(src_time,srcspin);
   DHputPtr->open(fkey);
-  if (sGridOutput) 
+  if (sgHandler) 
 		DHputPtrSparseGrid->open(fkey);
-  if (insOutput) DHputPtrInsertion->open(fkey);
-  if (sGridInsOutput) DHputPtrSparseGridInsertion->open(fkey);
+  if (insHandler) DHputPtrSummedInsertion->open(fkey);
+  if (sginsHandler) DHputPtrSparseGridSummedInsertion->open(fkey);
 
   int invcount=0;
 
@@ -1603,7 +1647,7 @@ void PerambulatorHandler::computePerambulatorsSS(int src_time, int tmin, int tma
        Array<dcmplx> qudaRes(Nspin, Textent, nEigs, nSinks);   // quda laph reversing major order
        __complex__ double* qudaResPtr = (__complex__ double*)(&qudaRes(0,0,0,0));
 
-			 if (sGridOutput) {
+			 if (sgHandler) {
 				 gridProject (sinkList, sinkBatchInds, nSinks, minTime, maxTime, Textent, print_coeffs, DHputPtrSparseGrid);
 				 bulova.stop();
 				 double otime=bulova.getTimeInSeconds();
@@ -1642,7 +1686,7 @@ void PerambulatorHandler::computePerambulatorsSS(int src_time, int tmin, int tma
 			 writetime+=otime;
 	   
 	  // carry out insertion 
-          if (insOutput) {
+          if (insHandler) {
 	     LattField ferm_src(FieldSiteType::ColorSpinVector);
 	     void *spinor_src = (void*)(ferm_src.getDataPtr());
 	     int iSinkBatchtwo = 0;
@@ -1694,8 +1738,8 @@ void PerambulatorHandler::computePerambulatorsSS(int src_time, int tmin, int tma
 	     	}
 
 	        // carry out projections
-                         if (sGridInsOutput) {
-                                 gridProject (sinkList, sinkBatchIndstwo, iSinkBatchtwo, minTime, maxTime, Textent, print_coeffs, DHputPtrSparseGridInsertion);
+                         if (sginsHandler) {
+                                 gridProject (sinkList, sinkBatchIndstwo, iSinkBatchtwo, minTime, maxTime, Textent, print_coeffs, DHputPtrSparseGridSummedInsertion);
                                  bulova.stop();
                                  double otime=bulova.getTimeInSeconds();
                                  printLaph(make_str(" Output of this batch to sparse grid insertion file took ",otime," seconds"));
@@ -1721,7 +1765,7 @@ void PerambulatorHandler::computePerambulatorsSS(int src_time, int tmin, int tma
                                                  vector<dcmplx> quark_sink(nEigs);
                                                  for (int iEv=0; iEv<nEigs; ++iEv) {
                                                          quark_sink[iEv] = soln_rescale*qudaRes(iSpin, t, iEv, iSink);}
-                                                 DHputPtrInsertion->putData(RecordKey(iSpin+1,t,sinkBatchInds[iSink]),quark_sink);
+                                                 DHputPtrSummedInsertion->putData(RecordKey(iSpin+1,t,sinkBatchInds[iSink]),quark_sink);
                                                  if (print_coeffs){
                                                          printLaph(make_strf("srcev_index = %d, spin = %d, time = %d",sinkBatchInds[iSink],iSpin+1,t));
                                                          for (int n=0;n<nEigs;n++){
@@ -1735,12 +1779,12 @@ void PerambulatorHandler::computePerambulatorsSS(int src_time, int tmin, int tma
 
 			 iSinkBatch = 0;}    // batch end
 		DHputPtr->flush();
-	  if (sGridOutput)	
+	  if (sgHandler)	
 			DHputPtrSparseGrid->flush();
-	  if (insOutput)
-         		DHputPtrInsertion->flush();
-     	  if (sGridInsOutput)
-         		DHputPtrSparseGridInsertion->flush();
+	  if (insHandler)
+         		DHputPtrSummedInsertion->flush();
+     	  if (sginsHandler)
+         		DHputPtrSparseGridSummedInsertion->flush();
     	}}   // src_ind, src_spin loop end
 
  inv_time+=invtime;
@@ -1826,29 +1870,31 @@ void PerambulatorHandler::make_source(LattField& ferm_src, const void* ev_src_pt
 }
 
 template <typename T>   // T = double or float
-void PerambulatorHandler::scale_by_ins_times_coord(T* data, int ncmplx_per_site, std::vector<int>& coeff)
+void PerambulatorHandler::scale_by_ins_times_coord(T* data, int ncmplx_per_site,const std::vector<int>& coeff)
 {
  const std::vector<int>& ext=LayoutInfo::getRankLattExtents();
  const std::vector<int>& cc=LayoutInfo::getMyCommCoords();
  const int nsites=LayoutInfo::getRankLatticeNumSites();
  const int sp=LayoutInfo::getMyStartParity();
- const int X0=cc[0]*ext[0], Y0=cc[1]*ext[1], Z0=cc[2]*ext[2];
-
+ const int X0=cc[0]*ext[0], Y0=cc[1]*ext[1], Z0=cc[2]*ext[2]; // global coordinates of rank's origin
+ 
+ // loop over all local lattice coordinates
  std::vector<int> loc(4);
  for (loc[3]=0;loc[3]<ext[3];++loc[3])
  for (loc[2]=0;loc[2]<ext[2];++loc[2])
  for (loc[1]=0;loc[1]<ext[1];++loc[1])
  for (loc[0]=0;loc[0]<ext[0];++loc[0]){
-    long site=LayoutInfo::linearSiteIndex_evenodd(loc,ext,nsites,sp);
-    const T s=T(coeff[0]*(X0+loc[0])+coeff[1]*(Y0+loc[1])+coeff[2]*(Z0+loc[2]));
-    T* p=data+2*site*ncmplx_per_site;
+    long idx = (long)((loc[0]+ext[0]*(loc[1]+ext[1]*(loc[2]+ext[2]*loc[3])))/2)
+          + (long)(nsites/2)*((sp+loc[0]+loc[1]+loc[2]+loc[3])%2); 
+    const T pre=T(coeff[0]*(X0+loc[0])+coeff[1]*(Y0+loc[1])+coeff[2]*(Z0+loc[2])); // twist * global coordinates
+    T* p=data+2*idx*ncmplx_per_site;
     for (int k=0;k<ncmplx_per_site;++k){
        T re=p[2*k], im=p[2*k+1];
-       p[2*k]  =-s*im;
-       p[2*k+1]= s*re;}}
+       p[2*k]  =-pre*im;
+       p[2*k+1]= pre*re;}}
 }
 
-void PerambulatorHandler::scale_by_ins_times_coord(LattField& field, std::vector<int>& coeff)
+void PerambulatorHandler::scale_by_ins_times_coord(LattField& field,const std::vector<int>& coeff)
 {
  int n=field.elemsPerSite();
  bool dp=(field.bytesPerWord()==sizeof(std::complex<double>));
@@ -1922,7 +1968,7 @@ const PerambulatorHandler::DataType& PerambulatorHandler::getDataSparseGrid(
                              int snk_time, int snk_spin, int src_time, int src_spin,
                              int src_eigvec_index) const
 {
- if (!sGridOutput){
+ if (!sgHandler){
     errorLaph("Cannot getDataSparseGrid in PerambulatorHandler: no sparse grid specified");}
  if (!isInfoSet()){
     errorLaph("Cannot getData in PerambulatorHandler unless info is set");}
@@ -1939,11 +1985,11 @@ const PerambulatorHandler::DataType& PerambulatorHandler::getDataSparseGrid(
  return DHgetPtrSparseGrid->getData(fkey,rkey);
 }
 
-const PerambulatorHandler::DataType& PerambulatorHandler::getDataInsertion(
+const PerambulatorHandler::DataType& PerambulatorHandler::getDataSummedInsertion(
                              int snk_time, int snk_spin, int src_time, int src_spin,
                              int src_eigvec_index) const
 {
- if (!insOutput){
+ if (!insHandler){
     errorLaph("Cannot getDataInsertion in PerambulatorHandler: no insertion specified");}
  if (!isInfoSet()){
     errorLaph("Cannot getData in PerambulatorHandler unless info is set");}
@@ -1957,15 +2003,15 @@ const PerambulatorHandler::DataType& PerambulatorHandler::getDataInsertion(
     errorLaph("Invalid parameters passed to getData in PerambulatorHandler");}
  FileKey fkey(src_time,src_spin);
  RecordKey rkey(snk_spin,snk_time,src_eigvec_index);
- return DHgetPtrInsertion->getData(fkey,rkey);
+ return DHgetPtrSummedInsertion->getData(fkey,rkey);
 }
 
-const PerambulatorHandler::DataType& PerambulatorHandler::getDataSparseGridInsertion(
+const PerambulatorHandler::DataType& PerambulatorHandler::getDataSparseGridSummedInsertion(
                              int snk_time, int snk_spin, int src_time, int src_spin,
                              int src_eigvec_index) const
 {
- if (!sGridInsOutput){
-    errorLaph("Cannot getDataSparseGridInsertion in PerambulatorHandler: no sparse grid projected insertion specified");}
+ if (!sginsHandler){
+    errorLaph("Cannot getDataSparseGridSummedInsertion in PerambulatorHandler: no sparse grid projected insertion specified");}
  if (!isInfoSet()){
     errorLaph("Cannot getData in PerambulatorHandler unless info is set");}
  if (mode==Compute){
@@ -1978,7 +2024,7 @@ const PerambulatorHandler::DataType& PerambulatorHandler::getDataSparseGridInser
     errorLaph("Invalid parameters passed to getData in PerambulatorHandler");}
  FileKey fkey(src_time,src_spin);
  RecordKey rkey(snk_spin,snk_time,src_eigvec_index);
- return DHgetPtrSparseGridInsertion->getData(fkey,rkey);
+ return DHgetPtrSparseGridSummedInsertion->getData(fkey,rkey);
 }
 
 Array<std::complex<double>> PerambulatorHandler::getFullData(
@@ -2008,7 +2054,7 @@ Array<std::complex<double>> PerambulatorHandler::getFullData(
 Array<std::complex<double>> PerambulatorHandler::getFullDataSparseGrid(
                  int snk_time, int snk_spin, int src_time, int src_spin, int nEigsUse) const
 {
- if (!sGridOutput){
+ if (!sgHandler){
     errorLaph("Cannot getFullDataSparseGrid in PerambulatorHandler: no sparse grid specified");}
  if (!isInfoSet()){
     errorLaph("Cannot getData in PerambulatorHandler unless info is set");}
@@ -2035,7 +2081,7 @@ Array<std::complex<double>> PerambulatorHandler::getFullDataSparseGrid(
 Array<std::complex<double>> PerambulatorHandler::getFullDataInsertion(
                  int snk_time, int snk_spin, int src_time, int src_spin, int nEigsUse) const
 {
- if (!insOutput){
+ if (!insHandler){
     errorLaph("Cannot getFullDataInsertion in PerambulatorHandler: no insertion specified");}
  if (!isInfoSet()){
     errorLaph("Cannot getData in PerambulatorHandler unless info is set");}
@@ -2051,18 +2097,18 @@ Array<std::complex<double>> PerambulatorHandler::getFullDataInsertion(
  Array<std::complex<double>> result(nEigsUse,nEigsUse);
  for (int srcev_ind=0;srcev_ind<nEigsUse;srcev_ind++){
     RecordKey rkey(snk_spin,snk_time,srcev_ind);
-    const PerambulatorHandler::DataType& buff=DHgetPtrInsertion->getData(fkey,rkey);
+    const PerambulatorHandler::DataType& buff=DHgetPtrSummedInsertion->getData(fkey,rkey);
     for (int n=0;n<nEigsUse;n++){
        result(n,srcev_ind)=buff[n];}
-    DHgetPtrInsertion->removeData(fkey,rkey);}
+    DHgetPtrSummedInsertion->removeData(fkey,rkey);}
  return result;
 }
 
-Array<std::complex<double>> PerambulatorHandler::getFullDataSparseGridInsertion(
+Array<std::complex<double>> PerambulatorHandler::getFullDataSparseGridSummedInsertion(
                  int snk_time, int snk_spin, int src_time, int src_spin, int nEigsUse) const
 {
- if (!sGridInsOutput){
-    errorLaph("Cannot getFullDataSparseGridInsertion in PerambulatorHandler: no sparse grid projected insertion specified");}
+ if (!sginsHandler){
+    errorLaph("Cannot getFullDataSparseGridSummedInsertion in PerambulatorHandler: no sparse grid projected insertion specified");}
  if (!isInfoSet()){
     errorLaph("Cannot getData in PerambulatorHandler unless info is set");}
  if (mode==Compute){
@@ -2078,10 +2124,10 @@ Array<std::complex<double>> PerambulatorHandler::getFullDataSparseGridInsertion(
  Array<std::complex<double>> result(gridSize,nEigsUse);
  for (int srcev_ind=0;srcev_ind<nEigsUse;srcev_ind++){
     RecordKey rkey(snk_spin,snk_time,srcev_ind);
-    const PerambulatorHandler::DataType& buff=DHgetPtrSparseGridInsertion->getData(fkey,rkey);
+    const PerambulatorHandler::DataType& buff=DHgetPtrSparseGridSummedInsertion->getData(fkey,rkey);
     for (int n=0;n<gridSize;n++){
        result(n,srcev_ind)=buff[n];}
-    DHgetPtrSparseGridInsertion->removeData(fkey,rkey);}
+    DHgetPtrSparseGridSummedInsertion->removeData(fkey,rkey);}
  return result;
 }
 
@@ -2104,7 +2150,7 @@ bool PerambulatorHandler::queryData(int snk_time, int snk_spin, int src_time, in
 bool PerambulatorHandler::queryDataSparseGrid(int snk_time, int snk_spin, int src_time, int src_spin,
                                     int src_eigvec_index) const
 {
- if (!sGridOutput){
+ if (!sgHandler){
     errorLaph("Cannot queryDataSparseGrid in PerambulatorHandler: no sparse grid specified");}
  if (!isInfoSet()) return false;
  if (mode==Compute) return false;
@@ -2122,7 +2168,7 @@ bool PerambulatorHandler::queryDataSparseGrid(int snk_time, int snk_spin, int sr
 bool PerambulatorHandler::queryDataInsertion(int snk_time, int snk_spin, int src_time, int src_spin,
                                     int src_eigvec_index) const
 {
- if (!insOutput){
+ if (!insHandler){
     errorLaph("Cannot queryDataInsertion in PerambulatorHandler: no insertion specified");}
  if (!isInfoSet()) return false;
  if (mode==Compute) return false;
@@ -2134,14 +2180,14 @@ bool PerambulatorHandler::queryDataInsertion(int snk_time, int snk_spin, int src
     return false;}
  FileKey fkey(src_time,src_spin);
  RecordKey rkey(snk_spin,snk_time,src_eigvec_index);
- return DHgetPtrInsertion->queryData(fkey,rkey);
+ return DHgetPtrSummedInsertion->queryData(fkey,rkey);
 }
 
-bool PerambulatorHandler::queryDataSparseGridInsertion(int snk_time, int snk_spin, int src_time, int src_spin,
+bool PerambulatorHandler::queryDataSparseGridSummedInsertion(int snk_time, int snk_spin, int src_time, int src_spin,
                                     int src_eigvec_index) const
 {
- if (!sGridInsOutput){
-    errorLaph("Cannot queryDataSparseGridInsertion in PerambulatorHandler: no sparse grid projected insertion specified");}
+ if (!sginsHandler){
+    errorLaph("Cannot queryDataSparseGridSummedInsertion in PerambulatorHandler: no sparse grid projected insertion specified");}
  if (!isInfoSet()) return false;
  if (mode==Compute) return false;
  int Textent = uPtr->getTimeExtent();
@@ -2152,7 +2198,7 @@ bool PerambulatorHandler::queryDataSparseGridInsertion(int snk_time, int snk_spi
     return false;}
  FileKey fkey(src_time,src_spin);
  RecordKey rkey(snk_spin,snk_time,src_eigvec_index);
- return DHgetPtrSparseGridInsertion->queryData(fkey,rkey);
+ return DHgetPtrSparseGridSummedInsertion->queryData(fkey,rkey);
 }
 
 
@@ -2177,7 +2223,7 @@ bool PerambulatorHandler::queryFullData(int snk_time, int snk_spin,
 bool PerambulatorHandler::queryFullDataSparseGrid(int snk_time, int snk_spin,
                                         int src_time, int src_spin, int nEigsUse) const
 {
-	if (!sGridOutput){
+	if (!sgHandler){
 		errorLaph("Cannot queryFullDataSparseGrid in PerambulatorHandler: no sparse grid specified");}
 	if (!isInfoSet()) return false;
 	if (mode==Compute) return false;
@@ -2198,7 +2244,7 @@ bool PerambulatorHandler::queryFullDataSparseGrid(int snk_time, int snk_spin,
 bool PerambulatorHandler::queryFullDataInsertion(int snk_time, int snk_spin,
                                         int src_time, int src_spin, int nEigsUse) const
 {
- if (!insOutput){
+ if (!insHandler){
                 errorLaph("Cannot queryFullDataInsertion in PerambulatorHandler: no insertion specified");}
  if (!isInfoSet()) return false;
  if (mode==Compute) return false;
@@ -2211,14 +2257,14 @@ bool PerambulatorHandler::queryFullDataInsertion(int snk_time, int snk_spin,
  FileKey fkey(src_time,src_spin);
  for (int srcev_ind=0;srcev_ind<nEigsUse;srcev_ind++){
     RecordKey rkey(snk_spin,snk_time,srcev_ind);
-    if (!DHgetPtrInsertion->queryData(fkey,rkey)) return false;}
+    if (!DHgetPtrSummedInsertion->queryData(fkey,rkey)) return false;}
  return true;
 }
 
-bool PerambulatorHandler::queryFullDataSparseGridInsertion(int snk_time, int snk_spin,
+bool PerambulatorHandler::queryFullDataSparseGridSummedInsertion(int snk_time, int snk_spin,
                                         int src_time, int src_spin, int nEigsUse) const
 {
-        if (!sGridInsOutput){
+        if (!sginsHandler){
                 errorLaph("Cannot queryFullDataSparseGrid in PerambulatorHandler: no sparse grid projected insertion specified");}
         if (!isInfoSet()) return false;
         if (mode==Compute) return false;
@@ -2232,7 +2278,7 @@ bool PerambulatorHandler::queryFullDataSparseGridInsertion(int snk_time, int snk
         int gridSize = sginsHandler->getGrid().getNGridPoints();
         for (int srcev_ind=0;srcev_ind<nEigsUse;srcev_ind++){
                 RecordKey rkey(snk_spin,snk_time,srcev_ind);
-                if (!DHgetPtrSparseGridInsertion->queryData(fkey,rkey)) return false;}
+                if (!DHgetPtrSparseGridSummedInsertion->queryData(fkey,rkey)) return false;}
         return true;
 }
 
@@ -2258,7 +2304,7 @@ void PerambulatorHandler::mergeData(const FileListInfo& input_files)
 
 void PerambulatorHandler::mergeDataSparseGrid(const FileListInfo& input_files)
 {
-	if (!sGridOutput){
+	if (!sgHandler){
 		errorLaph("Cannot mergeDataSparseGrid in PerambulatorHandler: no sparse grid specified");}
 	if (!isInfoSet()){
 		errorLaph("Cannot mergeData in PerambulatorHandler unless info is set");}
@@ -2276,10 +2322,10 @@ void PerambulatorHandler::mergeDataSparseGrid(const FileListInfo& input_files)
 			DHget.removeData(*it,*rt);}}
 }
 
-void PerambulatorHandler::mergeDataInsertion(const FileListInfo& input_files)
+void PerambulatorHandler::mergeDataSummedInsertion(const FileListInfo& input_files)
 {
-        if (!insOutput){
-                errorLaph("Cannot mergeDataInsertion in PerambulatorHandler: no insertion specified");}
+        if (!insHandler){
+                errorLaph("Cannot mergeDataSummedInsertion in PerambulatorHandler: no insertion specified");}
         if (!isInfoSet()){
                 errorLaph("Cannot mergeData in PerambulatorHandler unless info is set");}
         if (mode!=Merge){
@@ -2288,18 +2334,18 @@ void PerambulatorHandler::mergeDataInsertion(const FileListInfo& input_files)
                         *insHandler,input_files,"Laph--InsertionQuarkPeramb","PerambulatorHandlerDataFile");
         set<FileKey> fkeys(DHget.getFileKeys());
         for (set<FileKey>::iterator it=fkeys.begin();it!=fkeys.end();++it){
-                DHputPtrInsertion->open(*it);
+                DHputPtrSummedInsertion->open(*it);
                 set<RecordKey> rkeys(DHget.getKeys(*it));
                 for (set<RecordKey>::iterator rt=rkeys.begin();rt!=rkeys.end();++rt){
                         const DataType& buff=DHget.getData(*it,*rt);
-                        DHputPtrInsertion->putData(*rt,buff);
+                        DHputPtrSummedInsertion->putData(*rt,buff);
                         DHget.removeData(*it,*rt);}}
 }
 
-void PerambulatorHandler::mergeDataSparseGridInsertion(const FileListInfo& input_files)
+void PerambulatorHandler::mergeDataSparseGridSummedInsertion(const FileListInfo& input_files)
 {
-        if (!sGridInsOutput){
-                errorLaph("Cannot mergeDataSparseGridInsertion in PerambulatorHandler: no sparse grid projected insertion specified");}
+        if (!sginsHandler){
+                errorLaph("Cannot mergeDataSparseGridSummedInsertion in PerambulatorHandler: no sparse grid projected insertion specified");}
         if (!isInfoSet()){
                 errorLaph("Cannot mergeData in PerambulatorHandler unless info is set");}
         if (mode!=Merge){
@@ -2308,11 +2354,11 @@ void PerambulatorHandler::mergeDataSparseGridInsertion(const FileListInfo& input
                         *sginsHandler,input_files,"Laph--SGInsQuarkPeramb","PerambulatorHandlerSparseGridDataFile");
         set<FileKey> fkeys(DHget.getFileKeys());
         for (set<FileKey>::iterator it=fkeys.begin();it!=fkeys.end();++it){
-                DHputPtrSparseGridInsertion->open(*it);
+                DHputPtrSparseGridSummedInsertion->open(*it);
                 set<RecordKey> rkeys(DHget.getKeys(*it));
                 for (set<RecordKey>::iterator rt=rkeys.begin();rt!=rkeys.end();++rt){
                         const DataType& buff=DHget.getData(*it,*rt);
-                        DHputPtrSparseGridInsertion->putData(*rt,buff);
+                        DHputPtrSparseGridSummedInsertion->putData(*rt,buff);
                         DHget.removeData(*it,*rt);}}
 }
         // check data
@@ -2382,14 +2428,14 @@ void PerambulatorHandler::doChecks(const std::string& logfilestub, bool verbose_
        string logfile(logfilestub);
        logfile+=string("_")+make_string(count)+string(".checklog");
        printLaph(make_str("Check results will be sent to ",logfile));
-       if (sGridOutput) printLaph(make_strf("Check sparse grid results will be sent to %s_SG",logfile));
-       if (insOutput) printLaph(make_strf("Check insertion  results will be sent to %s_INS",logfile));
-       if (sGridInsOutput) printLaph(make_strf("Check sparse grid projected insertion results will be sent to ",logfile,"_SGINS"));
+       if (sgHandler) printLaph(make_strf("Check sparse grid results will be sent to %s_SG",logfile));
+       if (insHandler) printLaph(make_strf("Check insertion  results will be sent to %s_INS",logfile));
+       if (sginsHandler) printLaph(make_strf("Check sparse grid projected insertion results will be sent to ",logfile,"_SGINS"));
        if (count%numranks==myrank){
           doACheck(*it,src_spin,logfile,verbose_output);
-		if (sGridOutput) doACheckSparseGrid(*it,src_spin,logfile+"_SG",verbose_output);
-       		if (insOutput) doACheckInsertion(*it,src_spin,logfile+"_INS",verbose_output);
-		if (sGridInsOutput) doACheckSparseGridInsertion(*it,src_spin,logfile+"_SGINS",verbose_output);}}}
+		if (sgHandler) doACheckSparseGrid(*it,src_spin,logfile+"_SG",verbose_output);
+       		if (insHandler) doACheckInsertion(*it,src_spin,logfile+"_INS",verbose_output);
+		if (sginsHandler) doACheckSparseGridSummedInsertion(*it,src_spin,logfile+"_SGINS",verbose_output);}}}
 #ifdef ARCH_PARALLEL
  comm_barrier();
 #endif
@@ -2469,7 +2515,7 @@ void PerambulatorHandler::doACheck(const PerambComputation& pcomp, int src_spin,
 void PerambulatorHandler::doACheckSparseGrid(const PerambComputation& pcomp, int src_spin,
                                    const std::string& logfile, bool verbose_output)
 {
-	if (!sGridOutput){
+	if (!sgHandler){
 		errorLaph("Cannot doACheckSparseGrid in PerambulatorHandler: no sparse grid specified");}
 	XMLHandler xmlout("SparseGridPerambulatorDataCheck");
 	xmlout.put_child("SourceTime",make_string(pcomp.src_time));
@@ -2542,7 +2588,7 @@ void PerambulatorHandler::doACheckSparseGrid(const PerambComputation& pcomp, int
 void PerambulatorHandler::doACheckInsertion(const PerambComputation& pcomp, int src_spin,
                                    const std::string& logfile, bool verbose_output)
 {
- if (!insOutput){
+ if (!insHandler){
                 errorLaph("Cannot doACheckInsertion in PerambulatorHandler: no insertion specified");}
  XMLHandler xmlout("InsertionPerambulatorDataCheck");
  xmlout.put_child("SourceTime",make_string(pcomp.src_time));
@@ -2575,7 +2621,7 @@ void PerambulatorHandler::doACheckInsertion(const PerambComputation& pcomp, int 
  uint src_time=pcomp.src_time;
  bool flag=true;
  FileKey fkey(src_time,src_spin);
- if (!DHgetPtrInsertion->queryFile(fkey)){
+ if (!DHgetPtrSummedInsertion->queryFile(fkey)){
     if (verbose_output) fout << " Could not find data for src spin "<<src_spin<<endl;
     flag=false;}
  else{
@@ -2585,11 +2631,11 @@ void PerambulatorHandler::doACheckInsertion(const PerambComputation& pcomp, int 
          st!=pcomp.src_lapheigvec_indices.end();++st){
        uint srcev_ind=*st;
        RecordKey rkey(sinkspin,sink_time,srcev_ind);
-       if (!DHgetPtrInsertion->queryData(fkey,rkey)){
+       if (!DHgetPtrSummedInsertion->queryData(fkey,rkey)){
           if (verbose_output) fout << "Could not find record for "<<rkey.output()<<endl;
           flag=false;}
        else{
-          const DataType& data=DHgetPtrInsertion->getData(fkey,rkey);
+          const DataType& data=DHgetPtrSummedInsertion->getData(fkey,rkey);
           if (data.size()!=nEigs){
              if (verbose_output) fout << "Incorrect data size for record key "<<rkey.output()<<endl;
              flag=false;}
@@ -2608,12 +2654,12 @@ void PerambulatorHandler::doACheckInsertion(const PerambComputation& pcomp, int 
  fout.close();
 }
 
-void PerambulatorHandler::doACheckSparseGridInsertion(const PerambComputation& pcomp, int src_spin,
+void PerambulatorHandler::doACheckSparseGridSummedInsertion(const PerambComputation& pcomp, int src_spin,
                                    const std::string& logfile, bool verbose_output)
 {
-        if (!sGridInsOutput){
-                errorLaph("Cannot doACheckSparseGridInsertion in PerambulatorHandler: no sparse grid projected insertion specified");}
-        XMLHandler xmlout("SparseGridInsertionPerambulatorDataCheck");
+        if (!sginsHandler){
+                errorLaph("Cannot doACheckSparseGridSummedInsertion in PerambulatorHandler: no sparse grid projected insertion specified");}
+        XMLHandler xmlout("SparseGridSummedInsertionPerambulatorDataCheck");
         xmlout.put_child("SourceTime",make_string(pcomp.src_time));
         xmlout.put_child("SourceSpin",make_string(src_spin));
         string srcevindstr;
@@ -2647,7 +2693,7 @@ void PerambulatorHandler::doACheckSparseGridInsertion(const PerambComputation& p
         int nTot = nColor*gridSize;
 	bool flag=true;
         FileKey fkey(src_time,src_spin);
-        if (!DHgetPtrSparseGridInsertion->queryFile(fkey)){
+        if (!DHgetPtrSparseGridSummedInsertion->queryFile(fkey)){
                 if (verbose_output) fout << " Could not find data for src spin "<<src_spin<<endl;
                 flag=false;}
         else{
@@ -2657,11 +2703,11 @@ void PerambulatorHandler::doACheckSparseGridInsertion(const PerambComputation& p
                                                 st!=pcomp.src_lapheigvec_indices.end();++st){
                                         uint srcev_ind=*st;
                                         RecordKey rkey(sinkspin,sink_time,srcev_ind);
-                                        if (!DHgetPtrSparseGridInsertion->queryData(fkey,rkey)){
+                                        if (!DHgetPtrSparseGridSummedInsertion->queryData(fkey,rkey)){
                                                 if (verbose_output) fout << "Could not find record for "<<rkey.output()<<endl;
                                                 flag=false;}
                                         else{
-                                                const DataType& data=DHgetPtrSparseGridInsertion->getData(fkey,rkey);
+                                                const DataType& data=DHgetPtrSparseGridSummedInsertion->getData(fkey,rkey);
                                                 if (data.size()!=nTot){
                                                         if (verbose_output) fout << "Incorrect data size for record key "<<rkey.output()<<endl;
                                                         flag=false;}

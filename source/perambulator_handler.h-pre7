@@ -1,0 +1,751 @@
+#ifndef PERAMBULATOR_HANDLER_H
+#define PERAMBULATOR_HANDLER_H
+
+#include "gauge_configuration_handler.h"
+#include "quark_smearing_handler.h"
+#include "inverter_info.h"
+#include "sparse_grid.h"
+#include "insertion_info.h"
+#include "array.h"
+
+
+namespace LaphEnv {
+
+
+// *****************************************************************
+// *                                                               *
+// *  "PerambulatorHandler" handles computation of and subsequent  *
+// *  access to the quark perambulators.                           *
+// *                                                               *
+// *  This handler operates in one of four modes:                  *
+// *      enum Mode { ReadOnly, Merge, Compute, Check };           *
+// *                                                               *
+// *  Computations are done in "Compute" mode.  If computations    *
+// *  for all source eigvec indices cannot be done in a single     *
+// *  run and are sent to separate files, then these results       *
+// *  can be merged when in "Merge" mode.  In "Check" mode,        *
+// *  the results in the files are checked that they are all       *
+// *  available and are not NaNs.  "ReadOnly" mode is used for     *
+// *  accessing the results when computing correlators, for        *
+// *  example.                                                     *
+// *                                                               *
+// *  One of these handlers deals with quark perambulators         *
+// *  for **one** set of info parameters, given by                 *
+// *                                                               *
+// *         GaugeConfigurationInfo                                *
+// *         GluonSmearingInfo                                     *
+// *         QuarkSmearingInfo                                     *
+// *         Nspin  (4 or 2)                                       *
+// *         QuarkActionInfo                                       *
+// *         FileListInfo                                          *
+// *                                                               *
+// *  but one handler deals with different                         *
+// *                                                               *
+// *         src_time, snk_time, spin and Laph eigvec indices      *
+// *                                                               *
+// *  Optionally, sparse-grid projected perambulators can also be  *
+// *  written to file. These files have the same structure as      *
+// *  the ordinary perambulators. In order to compute sparse-grid  *
+// *  perambulators, an additional FileListInfo is required, as    *
+// *  well as an object of type 'RandomSparseGrid'                 *
+// *                                                               *
+// *  Optionally, insertion perambulators can also be              *
+// *  written to file. These files have the same structure as      *
+// *  the ordinary perambulators. In order to compute insertion    *
+// *  perambulators, an additional FileListInfo is required, as    *
+// *  well as an object of type 'InsertionInfo'    	           *
+// *                                                               *
+// *  Optionally, sparse-grid projected insertion perambulators    *
+// *  can also be written to file. These files have the same       *
+// *  structure as the ordinary perambulators. In order to compute *
+// *  sparse-grid projected insertion perambulators, the pre-      *
+// *  requisites for sparse-grid projected and insertion           *
+// *  perambulators need to be fullfilled, as well as an           *
+// *  additional FileListInfo (total of 4), is required.           *
+// *                                                               *
+// *  File structure and contents:                                 *
+// *                                                               *
+// *   - Results manipulated by one handler are contained in       *
+// *     several files.  Each file has the same stub, but          *
+// *     different positive integer suffices.                      *
+// *             stub.0                                            *
+// *             stub.1                                            *
+// *             ...                                               *
+// *             stub.N                                            *
+// *     The files included are specified in a FileListInfo. If    *
+// *     sparse-grid perambulators are also to be computed, a      *
+// *     second FileListInfo tag is required. The sparse grid,     *
+// *     insertion and sparse grid projected insertion files       *
+// *     are handled internally by a corresponding subclass of     *
+// *     PerambulatorHandler.                                      *
+// *                                                               *
+// *   - The header info in each file has a common part and a      *
+// *     part that is specific to that one file:                   *
+// *        <PerambulatorHandlerDataFile>                          *
+// *           - common part                                       *
+// *           - specific part                                     *
+// *        </PerambulatorHandlerDataFile>                         *
+// *     For the sparse-grid files, the outer tag is               *
+// *     'PerambulatorHandlerSparseGridDataFile'                   *
+// *     For the insertion files, the outer tag is                 *
+// *     'PerambulatorHandlerDataFile'	                           *
+// *     For the sparse-grid projected insertion files, the        *
+// *     outer tag ist 'PerambulatorHandlerSparseGridDataFile'     *
+// *                                                               *
+// *   - The common header info includes                           *
+// *         GaugeConfigurationInfo                                *
+// *         GluonSmearingInfo                                     *
+// *         QuarkSmearingInfo                                     *
+// *         QuarkActionInfo                                       *
+// *         Nspin  (4 or 2)                                       *
+// *         RandomSparseGridInfo (for sparse-grid and             *
+// *                               sparse-grid projected           *
+// *                               insertion files only)           *
+// *         InsertionInfo (for insertion and sparse-grid          *
+// *  			    projected insertion files only         *
+// *                                                               *
+// *   - The specific header info includes (FileKey)               *
+// *         int src_time, src_spin                                *
+// *                                                               *
+// *   - Each file contains several records whose access is given  *
+// *     by a RecordKey.  The RecordKey contains an integer        *
+// *     that specifies sink spin, sink time, and source eigenvec  *
+// *     index.  For ordinary and insertion perambulators,         *
+// *     the data in each  record (DataType) is a                  *
+// *     vector<complex<double>>  containing "nev" complex numbers,*
+// *     where "nev" is the number of Laph eigenvectors.           * 
+// *     For sparse-grid and sparse-grid projected insertion       *
+// *     perambulators, The DataType is the same, but the vector   *
+// *     contains NColor*NGrid complex numbers, where NColor = 3   *
+// *     and NGrid is number of spatial sparse grid points.        *
+// *     The Dirac-Pauli spin convention is used.                  *
+// *                                                               *
+// *  All Laph Handlers follow the member naming convention:       *
+// *                                                               *
+// *    compute....()  to do original computation                  *
+// *                                                               *
+// *    get...()       provides access to results                  *
+// *                                                               *
+// *  When using "set" and "get", individual spin components and   *
+// *  time slices are returned.  At this time, no quark            *
+// *  covariant displacements are accommodated.                    *
+// *                                                               *
+// *  The usual use of a PerambulatorHandler is as follows:        *
+// *                                                               *
+// *   - to compute the quark sources/sinks:                       *
+// *                                                               *
+// *       PerambulatorHandler Q;  // declare                      *
+// *       Q.setInfo(...);            // input common info         *
+// *       Q.setInverter(...);        // input inverter info       *
+// *       Q.computePerambulators(...);                            *
+// *                                                               *
+// *   - to subsequently use results to compute                    *
+// *     hadron source/sinks:                                      *
+// *                                                               *
+// *       PerambulatorHandler Q;                                  *
+// *       Q.setInfo(...);                                         *
+// *       Q.getData(...);                                         *
+// *                                                               *
+// *  Usually all of the perambulators for all source ev indices   *
+// *  cannot be done in a single run, and so for safety, the       *
+// *  data for different sets of source ev indices will get saved  *
+// *  into separate files.  These then need to be combined into    *
+// *  a single file for subsequent reading to compute the pion     *
+// *  and nucleon correlator.  The method                          *
+// *                                                               *
+// *     mergeData(...)                                            *
+// *                                                               *
+// *  is provided to accomplish this.                              *
+// *                                                               *
+// *****************************************************************
+
+class SparseGridHandler;
+class InsertionHandler;
+class SparseGridInsertionHandler;
+
+class PerambulatorHandler {
+
+ public:
+
+   enum Mode { ReadOnly, Merge, Compute, Check };
+
+
+       // sink spin is 1,2,3,4  (but stored as 0,1,2,3 in right-most two bits)
+       // sink time (next 15 bits)
+       // source_laphev_index (next 15 bits)
+
+   class RecordKey {
+
+      unsigned long code;   // at least 32 bit integer
+
+    public:
+
+      RecordKey() : code(0) {}
+      RecordKey(int snkspin, int snktime, int srcev_index)
+       {encode(snkspin,snktime,srcev_index);}
+      RecordKey(const RecordKey& in) : code(in.code) {}
+      RecordKey& operator=(const RecordKey& in) {code=in.code; return *this;}
+      RecordKey& set(int snkspin, int snktime, int srcev_index)
+       {encode(snkspin,snktime,srcev_index); return *this;}
+      ~RecordKey() {}
+
+      bool operator<(const RecordKey& rhs) const {return (code<rhs.code);}
+      bool operator==(const RecordKey& rhs) const {return (code==rhs.code);}
+      bool operator!=(const RecordKey& rhs) const {return (code!=rhs.code);}
+
+      unsigned int getSinkSpin() const
+       {const unsigned long spinmask=0x3ul; return (code&spinmask)+1;}
+      unsigned int getSinkTime() const 
+       {const unsigned long mask15bit=0x7FFFul; return (code>>2)&mask15bit;}
+      unsigned int getSourceLaphEigvecIndex() const {return (code>>17);}
+
+      void output(XMLHandler& xmlw) const;
+      std::string output(int indent=0) const;
+      
+      explicit RecordKey(const unsigned int* buf) {code=*buf;}
+      static int numints() {return 1;}
+      size_t numbytes() const {return sizeof(unsigned int);}
+      void copyTo(unsigned int* buf) const {*buf=code;}
+
+    //  void applyGamma5Herm(int& g5sign)
+    //  {const unsigned long spinmask=0x3ul;
+    //   g5sign=((code&spinmask)<2)?-1:1;
+    //   code^=0x2ul;}   // flip the bit second from right
+
+    private:
+
+      void encode(int snkspin, int snktime, int srcev_index)
+      {
+       const int imax=32768;
+       if  ((snkspin<1)||(snkspin>4)||(snktime<0)||(srcev_index<0)){
+          errorLaph("invalid indices in QuarkHandler::RecordKey");}
+       if  ((snktime>=imax)||(srcev_index>=imax)){
+          errorLaph("indices in QuarkHandler::RecordKey exceed maximum");}
+       code=srcev_index; code<<=15; 
+       code|=snktime; code<<=2; code|=snkspin-1;
+      }
+
+   };
+
+   struct FileKey
+   {
+      int src_time;
+      int src_spin;
+
+      FileKey() : src_time(0), src_spin(1)  {}
+      FileKey(int in_srctime, int in_srcspin);
+      FileKey(XMLHandler& xmlr);
+      FileKey(const FileKey& rhs);
+      FileKey& operator=(const FileKey& rhs);
+      ~FileKey(){}
+      virtual void output(XMLHandler& xmlw) const;
+      virtual std::string output(int indent=0) const;
+      bool operator<(const FileKey& rhs) const;
+      bool operator==(const FileKey& rhs) const;
+      bool operator!=(const FileKey& rhs) const;
+   };
+
+	 struct PerambComputation {
+      int src_time, tmin, tmax;
+      std::set<int> src_lapheigvec_indices;
+      PerambComputation(int in_src_time, int in_tmin, int in_tmax, const std::set<int>& src_evinds)
+               : src_time(in_src_time), tmin(in_tmin), tmax(in_tmax), src_lapheigvec_indices(src_evinds) {}
+   };
+
+   struct PerambComputations {
+      std::list<PerambComputation> computations;
+      uint nSinkLaphBatch;      // number of inversions before projecting on Laph evs
+      uint nSinkQudaBatch;      // number of quark sinks to project at a time as one batch
+      uint nEigQudaBatch;       // number of Laph evs to project at a time as one batch
+      bool useMultiSrcInverter;  
+   };
+
+   typedef std::vector<std::complex<double>> DataType;   // store in double precision even if single precision
+
+ private:
+
+	 // pointers to internal infos (managed by this handler
+	 // with new and delete)
+
+	 const GaugeConfigurationInfo *uPtr;
+	 const GluonSmearingInfo *gSmearPtr;
+	 const QuarkSmearingInfo *qSmearPtr;
+	 const QuarkActionInfo *qactionPtr;
+	 const FileListInfo *fPtr;
+	 const FileListInfo *fPtrSparseGrid;
+    const FileListInfo *fPtrInsertion;
+    const FileListInfo *fPtrSparseGridInsertion;
+	 const InverterInfo *invertPtr;
+	 SparseGridHandler *sgHandler;
+    InsertionHandler *insHandler;
+    SparseGridInsertionHandler *sginsHandler;	 
+	 uint Nspin;
+	 bool sGridOutput;
+    bool insOutput;
+    bool sGridInsOutput;
+	 Mode mode;
+	 void* preconditioner;
+
+	 // structure containing the computations to perform
+	 PerambComputations perambComps;
+
+	 // necessary quda data
+	 QudaInvertParam quda_inv_param;
+	 QudaInvertParam quda_ins_param;
+
+	 // sub-handler pointers
+	 static std::unique_ptr<QuarkSmearingHandler> qSmearHandler;
+	 static std::unique_ptr<GaugeConfigurationHandler> gaugeHandler;
+
+	 // Prevent copying ... handler might contain large
+	 // amounts of data
+
+	 PerambulatorHandler(const PerambulatorHandler&);
+	 PerambulatorHandler& operator=(const PerambulatorHandler&);
+
+
+	 // data I/O handler pointers
+
+	 DataPutHandlerMF<PerambulatorHandler,FileKey,RecordKey,DataType> *DHputPtr;
+	 DataPutHandlerMF<SparseGridHandler,FileKey,RecordKey,DataType> *DHputPtrSparseGrid;
+    DataPutHandlerMF<InsertionHandler,FileKey,RecordKey,DataType> *DHputPtrInsertion;
+    DataPutHandlerMF<SparseGridInsertionHandler,FileKey,RecordKey,DataType> *DHputPtrSparseGridInsertion;
+
+
+	 DataGetHandlerMF<PerambulatorHandler,FileKey,RecordKey,DataType> *DHgetPtr;
+	 DataGetHandlerMF<SparseGridHandler,FileKey,RecordKey,DataType> *DHgetPtrSparseGrid;
+    DataGetHandlerMF<InsertionHandler,FileKey,RecordKey,DataType> *DHgetPtrInsertion;
+    DataGetHandlerMF<SparseGridInsertionHandler,FileKey,RecordKey,DataType> *DHgetPtrSparseGridInsertion;
+
+
+ public:
+
+
+	 PerambulatorHandler();
+
+	 PerambulatorHandler(const GaugeConfigurationInfo& gaugeinfo,
+			 const GluonSmearingInfo& gluonsmear,
+			 const QuarkSmearingInfo& quarksmear,
+			 const QuarkActionInfo& quark,
+			 const RandomSparseGrid& rsgrid, 
+			 const FileListInfo& flist,
+			 const FileListInfo& flist_sparse_grid,
+			 const std::string& smeared_quark_filestub,
+			 bool upper_spin_components_only=false,
+			 Mode in_mode=ReadOnly,
+			 const std::string& gauge_str="default_gauge_field");
+
+	 PerambulatorHandler(const GaugeConfigurationInfo& gaugeinfo,
+          const GluonSmearingInfo& gluonsmear,
+          const QuarkSmearingInfo& quarksmear,
+          const QuarkActionInfo& quark,
+          const FileListInfo& flist,
+          const std::string& smeared_quark_filestub,
+          bool upper_spin_components_only=false,
+          Mode in_mode=ReadOnly,
+          const std::string& gauge_str="default_gauge_field");
+
+    PerambulatorHandler(const GaugeConfigurationInfo& gaugeinfo,
+			 const GluonSmearingInfo& gluonsmear,
+			 const QuarkSmearingInfo& quarksmear,
+			 const QuarkActionInfo& quark,
+			 const InsertionInfo& insinfo, 
+			 const FileListInfo& flist,
+			 const FileListInfo& flist_insertion,
+			 const std::string& smeared_quark_filestub,
+			 bool upper_spin_components_only=false,
+			 Mode in_mode=ReadOnly,
+			 const std::string& gauge_str="default_gauge_field");
+
+    PerambulatorHandler(const GaugeConfigurationInfo& gaugeinfo,
+			 const GluonSmearingInfo& gluonsmear,
+			 const QuarkSmearingInfo& quarksmear,
+			 const QuarkActionInfo& quark,
+			 const RandomSparseGrid& rsgrid,
+          const InsertionInfo& insinfo,  
+			 const FileListInfo& flist,
+          const FileListInfo& flist_sparse_grid,
+			 const FileListInfo& flist_insertion,
+          const FileListInfo& flist_sparse_grid_insertion,
+			 const std::string& smeared_quark_filestub,
+			 bool upper_spin_components_only=false,
+			 Mode in_mode=ReadOnly,
+			 const std::string& gauge_str="default_gauge_field");
+
+	 void setInfo(const GaugeConfigurationInfo& gaugeinfo,
+			 const GluonSmearingInfo& gluonsmear,
+			 const QuarkSmearingInfo& quarksmear,
+			 const QuarkActionInfo& quark,
+			 const RandomSparseGrid& rsgrid, 
+			 const FileListInfo& flist,
+			 const FileListInfo& flist_sparse_grid,
+			 const std::string& smeared_quark_filestub,
+			 bool upper_spin_components_only=false,
+			 Mode in_mode=ReadOnly,
+			 const std::string& gauge_str="default_gauge_field");
+
+	  void setInfo(const GaugeConfigurationInfo& gaugeinfo,
+       			 const GluonSmearingInfo& gluonsmear,
+       			 const QuarkSmearingInfo& quarksmear,
+       			 const QuarkActionInfo& quark,
+       			 const FileListInfo& flist,
+       			 const std::string& smeared_quark_filestub,
+       			 bool upper_spin_components_only=false,
+       			 Mode in_mode=ReadOnly,
+       			 const std::string& gauge_str="default_gauge_field");
+
+     void setInfo(const GaugeConfigurationInfo& gaugeinfo,
+			 const GluonSmearingInfo& gluonsmear,
+			 const QuarkSmearingInfo& quarksmear,
+			 const QuarkActionInfo& quark,
+			 const InsertionInfo& insinfo, 
+			 const FileListInfo& flist,
+			 const FileListInfo& flist_insertion,
+			 const std::string& smeared_quark_filestub,
+			 bool upper_spin_components_only=false,
+			 Mode in_mode=ReadOnly,
+			 const std::string& gauge_str="default_gauge_field");
+
+     void setInfo(const GaugeConfigurationInfo& gaugeinfo,
+			 const GluonSmearingInfo& gluonsmear,
+			 const QuarkSmearingInfo& quarksmear,
+			 const QuarkActionInfo& quark,
+           		 const RandomSparseGrid& rsgrid,
+			 const InsertionInfo& insinfo, 
+			 const FileListInfo& flist,
+			 const FileListInfo& flist_sparse_grid,
+			 const FileListInfo& flist_insertion,
+			 const FileListInfo& flist_sparse_grid_insertion,
+			 const std::string& smeared_quark_filestub,
+			 bool upper_spin_components_only=false,
+			 Mode in_mode=ReadOnly,
+			 const std::string& gauge_str="default_gauge_field");
+
+
+	 ~PerambulatorHandler();
+
+	 void clear();
+
+	 bool isInfoSet() const;
+	
+	 //Was this handler constructed with the necessary classes for sparse-grid 
+	 //output?
+	 bool sparseGridOutput() const;
+
+    bool insertionOutput() const;
+
+    bool sparseGridInsertionOutput() const;
+
+	 const GaugeConfigurationInfo& getGaugeConfigurationInfo() const;
+
+	 const GluonSmearingInfo& getGluonSmearingInfo() const;
+
+	 const QuarkSmearingInfo& getQuarkSmearingInfo() const;
+
+	 const QuarkActionInfo& getQuarkActionInfo() const;
+
+	 const FileListInfo& getFileListInfo() const;
+	 
+	 const RandomSparseGrid& getSparseGrid() const;
+	
+	 const FileListInfo& getFileListInfoSparseGrid() const;
+
+    const FileListInfo& getFileListInfoInsertion() const;
+
+    const FileListInfo& getFileListInfoSparseGridInsertion() const;
+
+	 uint getNumberOfLaplacianEigenvectors() const;
+
+	 int getTimeExtent() const;
+	 
+	 int getNSpin() const;
+
+	 void getHeader(XMLHandler& xmlout) const;
+
+	 void getFileMap(XMLHandler& xmlout) const;
+
+	 void outputSuffixMap();
+
+	 std::map<int,FileKey> getSuffixMap() const;
+
+	 void outputSuffixMap(XMLHandler& xmlout);
+
+   void setInverter(const InverterInfo& invinfo);
+
+   const InverterInfo& getInverterInfo() const;
+
+   bool setUpPreconditioning(QudaInvertParam& invParam);
+
+        // compute quark perambulators
+
+   void clearComputationSet();
+      
+   void setComputationSet(const XMLHandler& xmlcmp);
+
+   void computePerambulators(bool extra_soln_check=false,
+                             bool print_coeffs=false,
+                             bool report_gflops=false);
+
+        // get routines
+
+   const DataType& getData(int snk_time, int snk_spin, int src_time, int src_spin,
+                           int src_eigvec_index) const;
+   
+	 const DataType& getDataSparseGrid(int snk_time, int snk_spin, int src_time, int src_spin,
+                           int src_eigvec_index) const;
+
+	 const DataType& getDataInsertion(int snk_time, int snk_spin, int src_time, int src_spin,
+                           int src_eigvec_index) const;
+
+         const DataType& getDataSparseGridInsertion(int snk_time, int snk_spin, int src_time, int src_spin,
+                           int src_eigvec_index) const;
+
+   Array<std::complex<double>> getFullData(int snk_time, int snk_spin, 
+                                           int src_time, int src_spin, int nEigsUse) const;
+   
+	 Array<std::complex<double>> getFullDataSparseGrid(int snk_time, int snk_spin, 
+                                           int src_time, int src_spin, int nEigsUse) const;
+
+	 Array<std::complex<double>> getFullDataInsertion(int snk_time, int snk_spin,
+                                           int src_time, int src_spin, int nEigsUse) const;
+
+	 Array<std::complex<double>> getFullDataSparseGridInsertion(int snk_time, int snk_spin,
+                                           int src_time, int src_spin, int nEigsUse) const;
+
+   bool queryData(int snk_time, int snk_spin, int src_time, int src_spin,
+                  int src_eigvec_index) const;
+   
+	 bool queryDataSparseGrid(int snk_time, int snk_spin, int src_time, int src_spin,
+                  int src_eigvec_index) const;
+	 
+	 bool queryDataInsertion(int snk_time, int snk_spin, int src_time, int src_spin,
+                  int src_eigvec_index) const;
+	  
+	 bool queryDataSparseGridInsertion(int snk_time, int snk_spin, int src_time, int src_spin,
+                  int src_eigvec_index) const;
+
+   bool queryFullData(int snk_time, int snk_spin, int src_time, int src_spin, int nEigsUse) const;
+   
+	 bool queryFullDataSparseGrid(int snk_time, int snk_spin, int src_time, int src_spin, int nEigsUse) const;
+	
+	 bool queryFullDataInsertion(int snk_time, int snk_spin, int src_time, int src_spin, int nEigsUse) const;
+
+	 bool queryFullDataSparseGridInsertion(int snk_time, int snk_spin, int src_time, int src_spin, int nEigsUse) const;
+
+        // merge data
+
+   void mergeData(const FileListInfo& input_files);
+   void mergeDataSparseGrid(const FileListInfo& input_files);
+   void mergeDataInsertion(const FileListInfo& input_files);
+   void mergeDataSparseGridInsertion(const FileListInfo& input_files);
+   
+        // check data
+   void setChecks(const XMLHandler& xmlin);
+   void doChecks(const std::string& logfilestub, bool verbose_output=true);
+   
+
+ private:
+
+
+   void set_info(const GaugeConfigurationInfo& gaugeinfo,
+                 const GluonSmearingInfo& gluonsmear,
+                 const QuarkSmearingInfo& quarksmear,
+                 const QuarkActionInfo& quark,
+					  const RandomSparseGrid& rsgrid, 
+                 const FileListInfo& flist,
+					  const FileListInfo& flist_sparse_grid,
+                 const std::string& smeared_quark_filestub,
+                 bool upper_spin_components_only,
+                 const std::string& gauge_str, Mode in_mode);
+
+   void set_info(const GaugeConfigurationInfo& gaugeinfo,
+                 const GluonSmearingInfo& gluonsmear,
+                 const QuarkSmearingInfo& quarksmear,
+                 const QuarkActionInfo& quark,
+					  const InsertionInfo& insinfo, 
+                 const FileListInfo& flist,
+					  const FileListInfo& flist_insertion,
+                 const std::string& smeared_quark_filestub,
+                 bool upper_spin_components_only,
+                 const std::string& gauge_str, Mode in_mode);
+
+   void set_info(const GaugeConfigurationInfo& gaugeinfo,
+                 const GluonSmearingInfo& gluonsmear,
+                 const QuarkSmearingInfo& quarksmear,
+                 const QuarkActionInfo& quark,
+		 const RandomSparseGrid& rsgrid,
+		 const InsertionInfo& insinfo, 
+                 const FileListInfo& flist,
+                 const FileListInfo& flist_sparse_grid,
+     		 const FileListInfo& flist_insertion,
+                 const FileListInfo& flist_sparse_grid_insertion,
+                 const std::string& smeared_quark_filestub,
+                 bool upper_spin_components_only,
+                 const std::string& gauge_str, Mode in_mode);
+
+	 void set_info(const GaugeConfigurationInfo& gaugeinfo,
+                 const GluonSmearingInfo& gluonsmear,
+                 const QuarkSmearingInfo& quarksmear,
+                 const QuarkActionInfo& quark,
+                 const FileListInfo& flist,
+                 const std::string& smeared_quark_filestub,
+                 bool upper_spin_components_only,
+                 const std::string& gauge_str, Mode in_mode);
+
+   bool checkHeader(XMLHandler& xmlr, int suffix);
+   void writeHeader(XMLHandler& xmlout, const FileKey& fkey,
+                    int suffix);
+
+   void check_info_set(const std::string& name) const;
+
+         //  sub-handler connections
+
+   void connectGaugeConfigurationHandler();
+   void connectQuarkSmearingHandler(const std::string& smeared_quark_filestub);
+
+   void disconnectGaugeConfigurationHandler();
+   void disconnectQuarkSmearingHandler();
+
+   void computePerambulators(int src_time, int tmin, int tmax, const std::set<int>& src_evindices,
+                             const std::vector<void*>& evList, bool print_coeffs,
+                             bool extra_soln_check, bool report_gflops, 
+                             double& makesrc_time, double& inv_time, double& ins_time,
+                             double& evproj_time, double& write_time,
+                             bool use_multisrc_inverter);
+
+   void computePerambulatorsMS(int src_time, int tmin, int tmax, const std::set<int>& src_evindices,
+                               const std::vector<void*>& evList, bool print_coeffs,
+                               bool extra_soln_check, bool report_gflops, 
+                               double& makesrc_time, double& inv_time, double& ins_time,
+                               double& evproj_time, double& write_time);
+
+   void computePerambulatorsSS(int src_time, int tmin, int tmax, const std::set<int>& src_evindices,
+                               const std::vector<void*>& evList, bool print_coeffs,
+                               bool extra_soln_check, bool report_gflops, 
+                               double& makesrc_time, double& inv_time, double& ins_time,
+                               double& evproj_time, double& write_time);
+
+          // Makes the source in the Dirac-Pauli basis.  The source is
+	  // gamma_4 times the usual source since we use the chi = psi-bar gamma_4
+	  // field operator.   "src_spin" is 1,2,3,4
+
+   void make_source(LattField& ferm_src, const void* ev_src_ptr, 
+                    int src_time, int src_spin);
+
+   void doACheck(const PerambComputation& pcomp, int src_spin,
+                 const std::string& logfile, bool verbose_output);
+   void doACheckSparseGrid(const PerambComputation& pcomp, int src_spin,
+                 const std::string& logfile, bool verbose_output);
+   void doACheckInsertion(const PerambComputation& pcomp, int src_spin,
+                 const std::string& logfile, bool verbose_output);
+   void doACheckSparseGridInsertion(const PerambComputation& pcomp, int src_spin,
+                 const std::string& logfile, bool verbose_output);
+
+   friend class DataPutHandlerMF<PerambulatorHandler,FileKey,RecordKey,DataType>;
+   friend class DataGetHandlerMF<PerambulatorHandler,FileKey,RecordKey,DataType>;
+
+   template <typename H>
+   void gridProject (const std::vector<void*>& _doneList, const std::vector<int>& _sinkBatchDoneInds, int _nSinks, int _minTime, int _maxTime, int _Textent, 
+      bool print_coeffs, DataPutHandlerMF<H,FileKey,RecordKey,DataType>* _DHputPtr);
+
+   void applyInsertion ( LattField& outfield, const LattField& infield);
+   void applyWilsonCloverTwistDGR(LattField& outfield, const LattField& infield);
+   void applyWilsonCloverTwist(LattField& outfield, const LattField& infield);
+   void applyIsospinMassSplitting(LattField& outfield, const LattField& infield);
+
+};
+
+
+
+// **************************************************************************************
+// An internal subclass which handles the sparse-grid datafile output. 
+// **************************************************************************************
+class SparseGridHandler { 
+	const GaugeConfigurationInfo &gInfo;
+	const GluonSmearingInfo &gsInfo;
+	const QuarkSmearingInfo &qsInfo;
+	const QuarkActionInfo &qInfo;
+	const RandomSparseGrid &grid; 
+   int Nspin; 	
+	
+	public:
+	
+	SparseGridHandler(const GaugeConfigurationInfo& _gInfo, const GluonSmearingInfo& _gsInfo, 
+			const QuarkSmearingInfo& _qsInfo, const QuarkActionInfo& _qInfo, 
+			const RandomSparseGrid& _grid, int _Nspin) : gInfo(_gInfo), gsInfo(_gsInfo), qsInfo(_qsInfo),
+	qInfo(_qInfo), grid(_grid), Nspin(_Nspin) {} 
+
+	bool checkHeader(XMLHandler& xmlr, int suffix);
+	void writeHeader(XMLHandler& xmlout, 
+			const PerambulatorHandler::FileKey& fkey,
+			int suffix);
+	const RandomSparseGrid& getGrid() const { return grid; }
+
+	private: 
+		SparseGridHandler(const SparseGridHandler&); 
+		SparseGridHandler& operator=(const SparseGridHandler&);  
+};
+
+// **************************************************************************************
+// An internal subclass which handles the insertion datafile output. 
+// **************************************************************************************
+class InsertionHandler { 
+	const GaugeConfigurationInfo &gInfo;
+	const GluonSmearingInfo &gsInfo;
+	const QuarkSmearingInfo &qsInfo;
+	const QuarkActionInfo &qInfo;
+	const InsertionInfo &insInfo; 
+   int Nspin; 	
+	
+	public:
+	
+	InsertionHandler(const GaugeConfigurationInfo& _gInfo, const GluonSmearingInfo& _gsInfo, 
+			const QuarkSmearingInfo& _qsInfo, const QuarkActionInfo& _qInfo, 
+			const InsertionInfo& _insInfo, int _Nspin) : gInfo(_gInfo), gsInfo(_gsInfo), qsInfo(_qsInfo),
+	qInfo(_qInfo), insInfo(_insInfo), Nspin(_Nspin) {} 
+
+	bool checkHeader(XMLHandler& xmlr, int suffix);
+	void writeHeader(XMLHandler& xmlout, 
+			const PerambulatorHandler::FileKey& fkey,
+			int suffix);
+	const InsertionInfo& getInsertion() const { return insInfo; }
+	const GaugeConfigurationInfo& getGaugeConfig() const { return gInfo; }
+
+	private: 
+		InsertionHandler(const InsertionHandler&); 
+		InsertionHandler& operator=(const InsertionHandler&);  
+};
+
+// **************************************************************************************
+// An internal subclass which handles the sparse-grid insertion datafile output. 
+// **************************************************************************************
+class SparseGridInsertionHandler { 
+	const GaugeConfigurationInfo &gInfo;
+	const GluonSmearingInfo &gsInfo;
+	const QuarkSmearingInfo &qsInfo;
+	const QuarkActionInfo &qInfo;
+   const RandomSparseGrid &grid;
+	const InsertionInfo insInfo; 
+   int Nspin; 	
+	
+	public:
+	
+	SparseGridInsertionHandler(const GaugeConfigurationInfo& _gInfo, const GluonSmearingInfo& _gsInfo, 
+			const QuarkSmearingInfo& _qsInfo, const QuarkActionInfo& _qInfo, 
+			const RandomSparseGrid& _grid, const InsertionInfo& _insInfo, int _Nspin) : gInfo(_gInfo), gsInfo(_gsInfo), qsInfo(_qsInfo),
+	qInfo(_qInfo), grid(_grid), insInfo(_insInfo), Nspin(_Nspin) {} 
+
+	bool checkHeader(XMLHandler& xmlr, int suffix);
+	void writeHeader(XMLHandler& xmlout, 
+			const PerambulatorHandler::FileKey& fkey,
+			int suffix);
+   const RandomSparseGrid& getGrid() const { return grid; }
+	const InsertionInfo& getInsertion() const { return insInfo; }
+
+	private: 
+		SparseGridInsertionHandler(const InsertionHandler&); 
+		SparseGridInsertionHandler& operator=(const InsertionHandler&);  
+};
+
+}
+#endif  

@@ -334,7 +334,7 @@ class PerambulatorHandler {
     DataGetHandlerMF<InsertionHandler,FileKey,RecordKey,DataType> *DHgetPtrLeftInsertion;
     DataGetHandlerMF<InsertionHandler,FileKey,RecordKey,DataType> *DHgetPtrRightInsertion;
     DataGetHandlerMF<SparseGridInsertionHandler,FileKey,RecordKey,DataType> *DHgetPtrSparseGridSummedInsertion;
-    DataPutHandlerMF<SparseGridInsertionHandler,FileKey,RecordKey,DataType> *DHgetPtrSparseGridRightInsertion;
+    DataGetHandlerMF<SparseGridInsertionHandler,FileKey,RecordKey,DataType> *DHgetPtrSparseGridRightInsertion;
 
 
  public:
@@ -358,7 +358,7 @@ class PerambulatorHandler {
           const QuarkSmearingInfo& quarksmear,
           const QuarkActionInfo& quark,
           const std::map<PerambulatorType, FileListInfo>& pmap,
-          const std::string& smeared_quark_filestub
+          const std::string& smeared_quark_filestub,
           bool upper_spin_components_only=false,
           Mode in_mode=ReadOnly,
           const std::string& gauge_str="default_gauge_field");
@@ -439,11 +439,19 @@ class PerambulatorHandler {
 	
 	 //Was this handler constructed with the necessary classes for sparse-grid 
 	 //output?
+	 bool standardOutput() const;
+	
 	 bool sparseGridOutput() const;
 
-    bool insertionOutput() const;
+    	 bool summedInsertionOutput() const;
 
-    bool sparseGridInsertionOutput() const;
+    	 bool leftInsertionOutput() const;
+
+	 bool rightInsertionOutput() const;
+
+	 bool sparseGridsummedInsertionOutput() const;
+
+	 bool sparseGridrightInsertionOutput() const;
 
 	 const GaugeConfigurationInfo& getGaugeConfigurationInfo() const;
 
@@ -459,9 +467,15 @@ class PerambulatorHandler {
 	
 	 const FileListInfo& getFileListInfoSparseGrid() const;
 
-    const FileListInfo& getFileListInfoInsertion() const;
+   	 const FileListInfo& getFileListInfoSummedInsertion() const;
 
-    const FileListInfo& getFileListInfoSparseGridInsertion() const;
+	 const FileListInfo& getFileListInfoLeftInsertion() const;
+
+    	 const FileListInfo& getFileListInfoRightInsertion() const;
+
+	 const FileListInfo& getFileListInfoSparseGridSummedInsertion() const;
+
+	 const FileListInfo& getFileListInfoSparseGridRightInsertion() const;
 
 	 uint getNumberOfLaplacianEigenvectors() const;
 
@@ -503,10 +517,10 @@ class PerambulatorHandler {
 	 const DataType& getDataSparseGrid(int snk_time, int snk_spin, int src_time, int src_spin,
                            int src_eigvec_index) const;
 
-	 const DataType& getDataInsertion(int snk_time, int snk_spin, int src_time, int src_spin,
+	 const DataType& getDataSummedInsertion(int snk_time, int snk_spin, int src_time, int src_spin,
                            int src_eigvec_index) const;
 
-         const DataType& getDataSparseGridInsertion(int snk_time, int snk_spin, int src_time, int src_spin,
+         const DataType& getDataSparseGridSummedInsertion(int snk_time, int snk_spin, int src_time, int src_spin,
                            int src_eigvec_index) const;
 
    Array<std::complex<double>> getFullData(int snk_time, int snk_spin, 
@@ -518,7 +532,7 @@ class PerambulatorHandler {
 	 Array<std::complex<double>> getFullDataInsertion(int snk_time, int snk_spin,
                                            int src_time, int src_spin, int nEigsUse) const;
 
-	 Array<std::complex<double>> getFullDataSparseGridInsertion(int snk_time, int snk_spin,
+	 Array<std::complex<double>> getFullDataSparseGridSummedInsertion(int snk_time, int snk_spin,
                                            int src_time, int src_spin, int nEigsUse) const;
 
    bool queryData(int snk_time, int snk_spin, int src_time, int src_spin,
@@ -530,7 +544,7 @@ class PerambulatorHandler {
 	 bool queryDataInsertion(int snk_time, int snk_spin, int src_time, int src_spin,
                   int src_eigvec_index) const;
 	  
-	 bool queryDataSparseGridInsertion(int snk_time, int snk_spin, int src_time, int src_spin,
+	 bool queryDataSparseGridSummedInsertion(int snk_time, int snk_spin, int src_time, int src_spin,
                   int src_eigvec_index) const;
 
    bool queryFullData(int snk_time, int snk_spin, int src_time, int src_spin, int nEigsUse) const;
@@ -539,14 +553,14 @@ class PerambulatorHandler {
 	
 	 bool queryFullDataInsertion(int snk_time, int snk_spin, int src_time, int src_spin, int nEigsUse) const;
 
-	 bool queryFullDataSparseGridInsertion(int snk_time, int snk_spin, int src_time, int src_spin, int nEigsUse) const;
+	 bool queryFullDataSparseGridSummedInsertion(int snk_time, int snk_spin, int src_time, int src_spin, int nEigsUse) const;
 
         // merge data
 
    void mergeData(const FileListInfo& input_files);
    void mergeDataSparseGrid(const FileListInfo& input_files);
-   void mergeDataInsertion(const FileListInfo& input_files);
-   void mergeDataSparseGridInsertion(const FileListInfo& input_files);
+   void mergeDataSummedInsertion(const FileListInfo& input_files);
+   void mergeDataSparseGridSummedInsertion(const FileListInfo& input_files);
    
         // check data
    void setChecks(const XMLHandler& xmlin);
@@ -618,7 +632,7 @@ class PerambulatorHandler {
                              bool use_multisrc_inverter);
 
    void computePerambulatorsMS(int src_time, int tmin, int tmax, const std::set<int>& src_evindices,
-                               const std::vector<void*>& evList, const std::vector<void*>& evList,
+                               const std::vector<void*>& evList, const std::vector<void*>& evList_scaled,
                                bool print_coeffs, bool extra_soln_check, bool report_gflops, 
                                double& makesrc_time, double& inv_time, double& ins_time,
                                double& evproj_time, double& write_time);
@@ -636,11 +650,12 @@ class PerambulatorHandler {
    void make_source(LattField& ferm_src, const void* ev_src_ptr, 
                     int src_time, int src_spin);
 
-   void PerambulatorHandler::scale_by_ins_times_coord(T* data, int ncmplx_per_site,
-                                        std::vector<int>& coeff);
+   template <typename T>
+   void scale_by_ins_times_coord(T* data, int ncmplx_per_site,
+                                        const std::vector<int>& coeff);
 
-   void PerambulatorHandler::scale_by_ins_times_coord(LattField& field,
-                                        std::vector<int>& coeff);
+   void scale_by_ins_times_coord(LattField& field,
+                                        const std::vector<int>& coeff);
 
    void doACheck(const PerambComputation& pcomp, int src_spin,
                  const std::string& logfile, bool verbose_output);
@@ -648,7 +663,7 @@ class PerambulatorHandler {
                  const std::string& logfile, bool verbose_output);
    void doACheckInsertion(const PerambComputation& pcomp, int src_spin,
                  const std::string& logfile, bool verbose_output);
-   void doACheckSparseGridInsertion(const PerambComputation& pcomp, int src_spin,
+   void doACheckSparseGridSummedInsertion(const PerambComputation& pcomp, int src_spin,
                  const std::string& logfile, bool verbose_output);
 
    friend class DataPutHandlerMF<PerambulatorHandler,FileKey,RecordKey,DataType>;
