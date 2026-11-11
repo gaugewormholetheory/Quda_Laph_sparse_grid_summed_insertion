@@ -181,6 +181,7 @@ class PerambulatorHandler {
                PERAMBULATOR_INVALID_ENUM = LAPH_INVALID_ENUM};
    
    static PerambulatorType toPerambulatorType(const std::string& s);
+   static std::string toString(const PerambulatorType& ptype);
 
        // sink spin is 1,2,3,4  (but stored as 0,1,2,3 in right-most two bits)
        // sink time (next 15 bits)
@@ -279,25 +280,25 @@ class PerambulatorHandler {
 	 // pointers to internal infos (managed by this handler
 	 // with new and delete)
 
-	 const GaugeConfigurationInfo *uPtr;
-	 const GluonSmearingInfo *gSmearPtr;
-	 const QuarkSmearingInfo *qSmearPtr;
-	 const QuarkActionInfo *qactionPtr;
-    const FileListInfo *fPtr;
-    const FileListInfo *fPtrSparseGrid;
-    const FileListInfo *fPtrSummedInsertion;
-    const FileListInfo *fPtrLeftInsertion;
-    const FileListInfo *fPtrRightInsertion;
-    const FileListInfo *fPtrSparseGridRightInsertion;
-    const FileListInfo *fPtrSparseGridSummedInsertion;
-	 const InverterInfo *invertPtr;
-	 SparseGridHandler *sgHandler;
-    InsertionHandler *insHandler;
-    SparseGridInsertionHandler *sginsHandler;	 
+	 const GaugeConfigurationInfo *uPtr = nullptr;
+	 const GluonSmearingInfo *gSmearPtr = nullptr;
+	 const QuarkSmearingInfo *qSmearPtr = nullptr;
+	 const QuarkActionInfo *qactionPtr =nullptr;
+    const FileListInfo *fPtr = nullptr;
+    const FileListInfo *fPtrSparseGrid = nullptr;
+    const FileListInfo *fPtrSummedInsertion = nullptr;
+    const FileListInfo *fPtrLeftInsertion = nullptr;
+    const FileListInfo *fPtrRightInsertion = nullptr;
+    const FileListInfo *fPtrSparseGridRightInsertion = nullptr;
+    const FileListInfo *fPtrSparseGridSummedInsertion = nullptr;
+	 const InverterInfo *invertPtr = nullptr;
+	 SparseGridHandler *sgHandler = nullptr;
+    InsertionHandler *insHandler = nullptr;
+    SparseGridInsertionHandler *sginsHandler = nullptr;	 
 	 uint Nspin;
-    std::map<PerambulatorType, FileListInfo> *pmapPtr;
+    std::map<PerambulatorType, FileListInfo> *pmapPtr = nullptr;
 	 Mode mode;
-	 void* preconditioner;
+	 void* preconditioner = nullptr;
 
 	 // structure containing the computations to perform
 	 PerambComputations perambComps;
@@ -436,6 +437,8 @@ class PerambulatorHandler {
 	 void clear();
 
 	 bool isInfoSet() const;
+
+	 void checkAllocated() const;
 	
 	 //Was this handler constructed with the necessary classes for sparse-grid 
 	 //output?
@@ -485,13 +488,16 @@ class PerambulatorHandler {
 
 	 void getHeader(XMLHandler& xmlout) const;
 
-	 void getFileMap(XMLHandler& xmlout) const;
+	 void getFileMap(XMLHandler& xmlout, PerambulatorType ptype) const;
+
+	 void printSuffixMap(const std::string& label,
+                            const std::map<int,PerambulatorHandler::FileKey>& m);
 
 	 void outputSuffixMap();
 
-	 std::map<int,FileKey> getSuffixMap() const;
+	 std::map<int,FileKey> getSuffixMap(PerambulatorType ptype) const;
 
-	 void outputSuffixMap(XMLHandler& xmlout);
+	 void outputSuffixMap(XMLHandler& xmlout, PerambulatorType ptype);
 
    void setInverter(const InverterInfo& invinfo);
 
@@ -670,8 +676,12 @@ class PerambulatorHandler {
    friend class DataGetHandlerMF<PerambulatorHandler,FileKey,RecordKey,DataType>;
 
    template <typename H>
-   void gridProject (const std::vector<void*>& _doneList, const std::vector<int>& _sinkBatchDoneInds, int _nSinks, int _minTime, int _maxTime, int _Textent, 
-      bool print_coeffs, DataPutHandlerMF<H,FileKey,RecordKey,DataType>* _DHputPtr);
+   void gridProject (const std::vector<void*>& _doneList, const std::vector<int>& _sinkBatchDoneInds, int _nSinks, 
+		 int _minTime, int _maxTime, int _Textent, bool print_coeffs, DataPutHandlerMF<H,FileKey,RecordKey,DataType>* _DHputPtr);
+	
+   template <typename H>
+   bool recordsDone(DataPutHandlerMF<H,FileKey,RecordKey,DataType>* dh,
+                 const FileListInfo* fl, int Textent, int srcev_ind, PerambulatorType ptype);
 
    void applyInsertion ( LattField& outfield, const LattField& infield);
    void applyWilsonCloverTwistDGR(LattField& outfield, const LattField& infield);
@@ -750,7 +760,7 @@ class SparseGridInsertionHandler {
 	const QuarkSmearingInfo &qsInfo;
 	const QuarkActionInfo &qInfo;
    const RandomSparseGrid &grid;
-	const InsertionInfo insInfo; 
+	const InsertionInfo &insInfo; 
    int Nspin; 	
 	
 	public:
@@ -768,7 +778,7 @@ class SparseGridInsertionHandler {
 	const InsertionInfo& getInsertion() const { return insInfo; }
 
 	private: 
-		SparseGridInsertionHandler(const InsertionHandler&); 
+		SparseGridInsertionHandler(const SparseGridInsertionHandler&); 
 		SparseGridInsertionHandler& operator=(const InsertionHandler&);  
 };
 

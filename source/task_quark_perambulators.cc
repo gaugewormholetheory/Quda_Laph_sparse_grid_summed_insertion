@@ -147,53 +147,48 @@ void doLaphQuarkPerambulators(XMLHandler& xmltask)
  QuarkActionInfo quark(xmlr);
 
  std::map<PerambulatorHandler::PerambulatorType, FileListInfo> Perambulators;
- bool sparse_grid_type = false;
- bool insertion_type = false;
- bool sparse_grid_insertion_type = false;
  if (xml_tag_count(xmlr,"Perambulators")!=1){
-	 errorLaph("Exactly one <Perambulators> list needs to be specified.");}
+    errorLaph("Exactly one <Perambulators> list needs to be specified.");}
  XMLHandler xml_per(xmlr,"Perambulators");
  std::list<XMLHandler> entries = xml_per.find_among_children("Perambulator");
  if (entries.empty()){
-     errorLaph("The <Perambulators> list must contain at least one <Perambulator> specifying a type.");}
+    errorLaph("The <Perambulators> list must contain at least one <Perambulator>.");}
  for (XMLHandler& entry : entries){
-	 std::string type_name;
-	 xmlread(entry,"Type",type_name,"Perambulator");
-     PerambulatorHandler::PerambulatorType perambulator_type
-         = PerambulatorHandler::toPerambulatorType(type_name);
-     if (perambulator_type == PerambulatorHandler::PERAMBULATOR_INVALID_ENUM){
-      	 errorLaph("Unknown perambulator type: '" + type_name + "' was provided");}
-   	 FileListInfo files_entry(entry);
-   	 if (!Perambulators.emplace(perambulator_type,files_entry).second){
-    	 errorLaph("The provided perambulator types need to be unique.");}
- }
- if (Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID)){
-	 if (xml_tag_count(xmlr,"RandomSparseGridInfo")!=1)
-	 	 errorLaph("If perambulators of sparse grid type were chosen, input must include RandomSparseGridInfo.");
-	 sparse_grid_type = true;
- }
- if (Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_INSERTION)||
- 	Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_RIGHT_INSERTION)||
-	Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_SUMMED_INSERTION)){
-	 if (xml_tag_count(xmlr,"InsertionInfo")!=1)
-	 	 errorLaph("If perambulators of insertion type were chosen, input must include InsertionInfo.");
-	 insertion_type = true;
- }
- if (Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION)||
-	Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION)){
-	 if (xml_tag_count(xmlr,"InsertionInfo")!=1)
-	 	 errorLaph("If perambulators of sparse grid insertion type were chosen, input must include RandomSparseGridInfo and InsertionInfo.");
-	 sparse_grid_insertion_type = true;
- }
- if  ((Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_RIGHT_INSERTION)||
- 	Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION))&&
-	(Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_STANDARD)||
-	Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID)||
-	Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_INSERTION)||
-	Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_SUMMED_INSERTION)||
-	Perambulators.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION))){
-	 errorLaph("Only those types of perambulators may be selected whose computations are based on the same source."); 
- }
+    std::string type_name;
+    xmlread(entry,"Type",type_name,"Perambulator");
+    PerambulatorHandler::PerambulatorType ptype=PerambulatorHandler::toPerambulatorType(type_name);
+    if (ptype==PerambulatorHandler::PERAMBULATOR_INVALID_ENUM){
+       errorLaph("Unknown perambulator type: '"+type_name+"' was provided");}
+    FileListInfo files_entry(entry);
+    if (!Perambulators.emplace(ptype,files_entry).second){
+       errorLaph("The provided perambulator types need to be unique.");}}
+
+ using PH = PerambulatorHandler;
+ auto has=[&](PH::PerambulatorType t){ return Perambulators.count(t)==1; };
+
+ const bool sg_type     = has(PH::PERAMBULATOR_LEFT_SPARSE_GRID);
+ const bool ins_type    = has(PH::PERAMBULATOR_LEFT_INSERTION) || has(PH::PERAMBULATOR_RIGHT_INSERTION)
+                       || has(PH::PERAMBULATOR_SUMMED_INSERTION);
+ const bool sgins_type  = has(PH::PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION)
+                       || has(PH::PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION);
+
+ // what handler must be provided
+ const bool need_sg  = sg_type  || sgins_type;
+ const bool need_ins = ins_type || sgins_type;
+
+ if (need_sg && xml_tag_count(xmlr,"RandomSparseGridInfo")!=1){
+    errorLaph("Sparse grid perambulator types require exactly one <RandomSparseGridInfo>.");}
+ if (need_ins && xml_tag_count(xmlr,"InsertionInfo")!=1){
+    errorLaph("Insertion perambulator types require exactly one <InsertionInfo>.");}
+
+ // right-insertion types use a different source than all others
+ const bool rescaled_src = has(PH::PERAMBULATOR_RIGHT_INSERTION)
+                     || has(PH::PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION);
+ const bool standard_src = has(PH::PERAMBULATOR_STANDARD) || has(PH::PERAMBULATOR_LEFT_SPARSE_GRID)
+                     || has(PH::PERAMBULATOR_LEFT_INSERTION) || has(PH::PERAMBULATOR_SUMMED_INSERTION)
+                     || has(PH::PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION);
+ if (rescaled_src && standard_src){
+    errorLaph("Right-insertion types cannot be combined with types based on a different source.");}
 
  InverterInfo invinfo(xmlr);
  bool upper_spin_only=false;
@@ -235,34 +230,33 @@ void doLaphQuarkPerambulators(XMLHandler& xmltask)
  if (extra_soln_check){
     printLaph("Extra solution checks will be performed");}
 
+ // objects the handler keeps references to: declare BEFORE Q so they are destroyed AFTER it
+ std::unique_ptr<RandomSparseGrid> sGridPtr;
+ InsertionInfo insertion;
+ if (need_sg){
+    XMLHandler xmlr_sg(xmlr,"RandomSparseGridInfo");
+    sGridPtr.reset(new RandomSparseGrid(xmlr_sg));
+    printLaph(make_strf("\nSparse Grid:\n%s\n",sGridPtr->output()));}
+ if (need_ins){
+    XMLHandler xmlr_ins(xmlr,"InsertionInfo");
+    insertion=InsertionInfo(xmlr_ins);
+    printLaph(make_strf("\nInsertion:\n%s\n",insertion.output()));}
+
  // create handler
  PerambulatorHandler Q;
- InsertionInfo insertion; 
- if ((sparse_grid_type)&&(!insertion_type)){
-     XMLHandler xmlr_sg(xmlr,"RandomSparseGridInfo");
-	 RandomSparseGrid sGrid(xmlr_sg);  
-	 printLaph(make_strf("\n\nSparse Grid:\n%s\n",sGrid.output()));
-	 Q.setInfo(gaugeinfo,gSmear,qSmear,quark,sGrid,Perambulators,
-                       smeared_quark_filestub,upper_spin_only,mode);
- }  else if ((!sparse_grid_type)&&(insertion_type)) {
-     XMLHandler xmlr_ins(xmlr,"InsertionInfo");
-	 insertion = InsertionInfo(xmlr_ins);
-	 printLaph(make_strf("\n\nInsertion:\n%s\n",insertion.output()));
-	 Q.setInfo(gaugeinfo,gSmear,qSmear,quark,insertion,Perambulators,
-                       smeared_quark_filestub,upper_spin_only,mode);
- }  else if (sparse_grid_insertion_type) {
-     XMLHandler xmlr_sg(xmlr,"RandomSparseGridInfo");
-	 RandomSparseGrid sGrid(xmlr_sg);  
-	 printLaph(make_strf("\n\nSparse Grid:\n%s\n",sGrid.output()));
-	 XMLHandler xmlr_ins(xmlr,"InsertionInfo");
-	 insertion = InsertionInfo(xmlr_ins);  
-	 printLaph(make_strf("\n\nInsertion:\n%s\n",insertion.output()));
-	 Q.setInfo(gaugeinfo,gSmear,qSmear,quark,sGrid,insertion,Perambulators,
-                       smeared_quark_filestub,upper_spin_only,mode);
- }  else { 
-	 Q.setInfo(gaugeinfo,gSmear,qSmear,quark,Perambulators,smeared_quark_filestub,
-			 upper_spin_only,mode);
- }
+ if (need_sg && need_ins){
+    Q.setInfo(gaugeinfo,gSmear,qSmear,quark,*sGridPtr,insertion,Perambulators,
+              smeared_quark_filestub,upper_spin_only,mode);}
+ else if (need_sg){
+    Q.setInfo(gaugeinfo,gSmear,qSmear,quark,*sGridPtr,Perambulators,
+              smeared_quark_filestub,upper_spin_only,mode);}
+ else if (need_ins){
+    Q.setInfo(gaugeinfo,gSmear,qSmear,quark,insertion,Perambulators,
+              smeared_quark_filestub,upper_spin_only,mode);}
+ else{
+    Q.setInfo(gaugeinfo,gSmear,qSmear,quark,Perambulators,
+              smeared_quark_filestub,upper_spin_only,mode);}
+ 
  // read the set of computations (time sources, src eigvec indices)
  // as well as the batching parameters
  XMLHandler xmlcmp(xmltask,"ComputationSet");

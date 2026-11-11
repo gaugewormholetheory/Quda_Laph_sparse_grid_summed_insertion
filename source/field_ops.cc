@@ -432,8 +432,8 @@ void compare_latt_fields(const LattField& src1, const LattField& src2)
              if (dff>df){df=dff;}}}}}
  bool gflag=globalAnd(flag);
  double gdf=globalMax(df);
- if (gflag){ printLaph(make_strf("Fields AGREE within %g",gdf));}
- else printLaph("Fields DIFFER in precision or site type");
+ if (gflag){ printLaph(make_strf("   Fields AGREE within %g",gdf));}
+ else printLaph("   Fields DIFFER in precision or site type");
 }
 
 

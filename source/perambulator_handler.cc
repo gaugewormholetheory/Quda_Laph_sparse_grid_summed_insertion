@@ -19,21 +19,34 @@ namespace LaphEnv {
 PerambulatorHandler::PerambulatorType PerambulatorHandler::toPerambulatorType(const std::string& s)
    {
       if (s=="PERAMBULATOR_STANDARD"){
-         printLaph(s + " output enabled."); return PerambulatorHandler::PerambulatorType::PERAMBULATOR_STANDARD;}                      
+         printLaph("  " + s + " output enabled."); return PerambulatorHandler::PerambulatorType::PERAMBULATOR_STANDARD;}
       if (s=="PERAMBULATOR_LEFT_SPARSE_GRID"){
-         printLaph(s + " output enabled."); return PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID;}              
+         printLaph("  " + s + " output enabled."); return PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID;}
       if (s=="PERAMBULATOR_LEFT_INSERTION"){
-         printLaph(s + " output enabled."); return PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_INSERTION;}                  
+         printLaph("  " + s + " output enabled."); return PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_INSERTION;}
       if (s=="PERAMBULATOR_RIGHT_INSERTION"){
-         printLaph(s + " output enabled."); return PerambulatorHandler::PerambulatorType::PERAMBULATOR_RIGHT_INSERTION;}
+         printLaph("  " + s + " output enabled."); return PerambulatorHandler::PerambulatorType::PERAMBULATOR_RIGHT_INSERTION;}
       if (s=="PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION"){
-         printLaph(s + " output enabled."); return PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION;} 
+         printLaph("  " + s + " output enabled."); return PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION;} 
       if (s=="PERAMBULATOR_SUMMED_INSERTION") {
-         printLaph(s + " output enabled."); return PerambulatorHandler::PerambulatorType::PERAMBULATOR_SUMMED_INSERTION;}                 
+         printLaph("  " + s + " output enabled."); return PerambulatorHandler::PerambulatorType::PERAMBULATOR_SUMMED_INSERTION;}
       if (s=="PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION"){
-         printLaph(s + " output enabled."); return PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION;}
+         printLaph("  " + s + " output enabled."); return PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION;}
       return PerambulatorHandler::PerambulatorType::PERAMBULATOR_INVALID_ENUM;
    }
+
+std::string PerambulatorHandler::toString(const PerambulatorType& ptype)
+{
+ switch (ptype){
+    case PERAMBULATOR_STANDARD:                         return "PERAMBULATOR_STANDARD";
+    case PERAMBULATOR_LEFT_SPARSE_GRID:                 return "PERAMBULATOR_LEFT_SPARSE_GRID";
+    case PERAMBULATOR_LEFT_INSERTION:                   return "PERAMBULATOR_LEFT_INSERTION";
+    case PERAMBULATOR_RIGHT_INSERTION:                  return "PERAMBULATOR_RIGHT_INSERTION";
+    case PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION: return "PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION";
+    case PERAMBULATOR_SUMMED_INSERTION:                 return "PERAMBULATOR_SUMMED_INSERTION";
+    case PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION:return "PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION";
+    default:                                            return "PERAMBULATOR_INVALID_ENUM";}
+}
    
 // *************************************************************************
 
@@ -466,63 +479,69 @@ PerambulatorHandler::~PerambulatorHandler()
 
 void PerambulatorHandler::clear()
 {
-	if (isInfoSet()) {
-		try{
-			delete uPtr;
-			delete gSmearPtr;
-			delete qSmearPtr;
-			delete qactionPtr;
+		try{    
+			delete DHputPtr;                       DHputPtr=0;
+		        delete DHgetPtr;                       DHgetPtr=0;
+		        delete DHputPtrSparseGrid;             DHputPtrSparseGrid=0;
+		        delete DHgetPtrSparseGrid;             DHgetPtrSparseGrid=0;
+		        delete DHputPtrSummedInsertion;        DHputPtrSummedInsertion=0;
+		        delete DHgetPtrSummedInsertion;        DHgetPtrSummedInsertion=0;
+		        delete DHputPtrLeftInsertion;          DHputPtrLeftInsertion=0;
+		        delete DHgetPtrLeftInsertion;          DHgetPtrLeftInsertion=0;
+		        delete DHputPtrRightInsertion;         DHputPtrRightInsertion=0;
+		        delete DHgetPtrRightInsertion;         DHgetPtrRightInsertion=0;
+		        delete DHputPtrSparseGridSummedInsertion; DHputPtrSparseGridSummedInsertion=0;
+		        delete DHgetPtrSparseGridSummedInsertion; DHgetPtrSparseGridSummedInsertion=0;
+		        delete DHputPtrSparseGridRightInsertion;  DHputPtrSparseGridRightInsertion=0;
+		        delete DHgetPtrSparseGridRightInsertion;  DHgetPtrSparseGridRightInsertion=0;
+
+			delete fPtr;                           fPtr=0;
+      			delete fPtrSparseGrid;                 fPtrSparseGrid=0;
+      			delete fPtrSummedInsertion;            fPtrSummedInsertion=0;
+      			delete fPtrLeftInsertion;              fPtrLeftInsertion=0;
+      			delete fPtrRightInsertion;             fPtrRightInsertion=0;
+      			delete fPtrSparseGridSummedInsertion;  fPtrSparseGridSummedInsertion=0;
+      			delete fPtrSparseGridRightInsertion;   fPtrSparseGridRightInsertion=0;
+				
+      			delete sgHandler;    sgHandler=0;
+      			delete insHandler;   insHandler=0;
+     			delete sginsHandler; sginsHandler=0;					
+			
+			delete pmapPtr; 	pmapPtr=0;
+			delete uPtr; 		uPtr=0;
+			delete gSmearPtr;	gSmearPtr=0;
+			delete qSmearPtr;	qSmearPtr=0;
+			delete qactionPtr;	qactionPtr=0;
 			if (QudaInfo::clover_on_device){
 				freeCloverQuda();
 				QudaInfo::clover_on_device=false;}  // delete clover in case next task uses different kappa
-			if ( (*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_STANDARD) == 1){
-            delete fPtr; fPtr=0;
-            delete DHgetPtr; DHgetPtr=0;
-		      delete DHputPtr; DHputPtr=0;}
-			if ( (*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID) == 1){
-            delete fPtrSparseGrid; fPtrSparseGrid=0;
-            delete DHgetPtrSparseGrid; DHgetPtrSparseGrid=0;
-		      delete DHputPtrSparseGrid; DHputPtrSparseGrid=0;}	
-         if ( (*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_SUMMED_INSERTION) == 1){
-            delete fPtrSummedInsertion; fPtrSummedInsertion=0;
-            delete DHgetPtrSummedInsertion; DHgetPtrSummedInsertion=0;
-		      delete DHputPtrSummedInsertion; DHputPtrSummedInsertion=0;}
-         if ( (*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_INSERTION) == 1){
-            delete fPtrLeftInsertion; fPtrLeftInsertion=0;
-            delete DHgetPtrLeftInsertion; DHgetPtrLeftInsertion=0;
-		      delete DHputPtrLeftInsertion; DHputPtrLeftInsertion=0;}
-         if ( (*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_RIGHT_INSERTION) == 1){
-            delete fPtrRightInsertion; fPtrRightInsertion=0;
-            delete DHgetPtrRightInsertion; DHgetPtrRightInsertion=0;
-		      delete DHputPtrRightInsertion; DHputPtrRightInsertion=0;}
-         if ( (*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION) == 1){
-            delete fPtrSparseGridSummedInsertion; fPtrSparseGridSummedInsertion=0;
-            delete DHgetPtrSparseGridSummedInsertion; DHgetPtrSparseGridSummedInsertion=0;
-		      delete DHputPtrSparseGridSummedInsertion; DHputPtrSparseGridSummedInsertion=0;}
-         if ( (*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION) == 1){
-            delete fPtrSparseGridRightInsertion; fPtrSparseGridRightInsertion=0;
-            delete DHgetPtrSparseGridRightInsertion; DHgetPtrSparseGridRightInsertion=0;
-		      delete DHputPtrSparseGridRightInsertion; DHputPtrSparseGridRightInsertion=0;}
-         delete pmapPtr; delete pmapPtr;
 			delete invertPtr;
 			if (preconditioner){
 				destroyMultigridQuda(preconditioner);}
 			clearComputationSet();}
 		catch(const std::exception& xp){
-			errorLaph("abort");}
-		uPtr=0;
-		gSmearPtr=0;
-		qSmearPtr=0;
-		qactionPtr=0;
-		invertPtr=0;
+			errorLaph(make_strf("abort: error in PerambulatorHandler::clear: %s",xp.what()));}
 		mode=ReadOnly;
 		preconditioner=0;
 		disconnectGaugeConfigurationHandler();
 		disconnectQuarkSmearingHandler();
 
-	}
 }
 
+ void PerambulatorHandler::checkAllocated() const
+ {
+  auto need=[&](PerambulatorType t,const void* p,const char* name){
+     if (pmapPtr->count(t)==1 && p==0)
+        errorLaph(std::string(name)+" requested but its handler was not allocated "
+                  "(missing RandomSparseGridInfo/InsertionInfo or wrong mode?)");};
+  need(PERAMBULATOR_STANDARD,DHputPtr,"STANDARD");
+  need(PERAMBULATOR_LEFT_SPARSE_GRID,DHputPtrSparseGrid,"LEFT_SPARSE_GRID");
+  need(PERAMBULATOR_SUMMED_INSERTION,DHputPtrSummedInsertion,"SUMMED_INSERTION");
+  need(PERAMBULATOR_LEFT_INSERTION,DHputPtrLeftInsertion,"LEFT_INSERTION");
+  need(PERAMBULATOR_RIGHT_INSERTION,DHputPtrRightInsertion,"RIGHT_INSERTION");
+  need(PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION,DHputPtrSparseGridSummedInsertion,"SG_SUMMED_INSERTION");
+  need(PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION,DHputPtrSparseGridRightInsertion,"SG_RIGHT_INSERTION");
+ }
 
   // ********************************
   // *
@@ -714,39 +733,104 @@ void PerambulatorHandler::setComputationSet(const XMLHandler& xmlin)
 }
 
 
-void PerambulatorHandler::getFileMap(XMLHandler& xmlout) const
+void PerambulatorHandler::getFileMap(XMLHandler& xmlout, PerambulatorHandler::PerambulatorType ptype) const
 {
- if (isInfoSet()) DHputPtr->getFileMap(xmlout);
+ check_info_set("getFileMap");
+ switch (ptype){
+    case PERAMBULATOR_STANDARD:
+       if (DHputPtr){ DHputPtr->getFileMap(xmlout); return;} break;
+    case PERAMBULATOR_LEFT_SPARSE_GRID:
+       if (DHputPtrSparseGrid){ DHputPtrSparseGrid->getFileMap(xmlout); return;} break;
+    case PERAMBULATOR_SUMMED_INSERTION:
+       if (DHputPtrSummedInsertion){ DHputPtrSummedInsertion->getFileMap(xmlout); return;} break;
+    case PERAMBULATOR_LEFT_INSERTION:
+       if (DHputPtrLeftInsertion){ DHputPtrLeftInsertion->getFileMap(xmlout); return;} break;
+    case PERAMBULATOR_RIGHT_INSERTION:
+       if (DHputPtrRightInsertion){ DHputPtrRightInsertion->getFileMap(xmlout); return;} break;
+    case PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION:
+       if (DHputPtrSparseGridSummedInsertion){ DHputPtrSparseGridSummedInsertion->getFileMap(xmlout); return;} break;
+    case PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION:
+       if (DHputPtrSparseGridRightInsertion){ DHputPtrSparseGridRightInsertion->getFileMap(xmlout); return;} break;
+    default: break;}
+ errorLaph("getFileMap: requested perambulator type is not available in this handler");
 }
 
-map<int,PerambulatorHandler::FileKey> PerambulatorHandler::getSuffixMap() const
-{
- check_info_set("getSuffixMap");
- if (mode!=ReadOnly){
-    return DHputPtr->getSuffixMap();}
- else{
-    return DHgetPtr->getSuffixMap();}
-}
 
+void PerambulatorHandler::printSuffixMap(const std::string& label,
+                           const std::map<int,PerambulatorHandler::FileKey>& m)
+{
+ printLaph("--------------------------------");
+ printLaph(make_strf("Suffix map (%s):",label));
+ for (auto it=m.begin();it!=m.end();++it){
+    printLaph(make_strf("suffix  %d:  source time = %d  source spin = %d",
+              it->first,it->second.src_time,it->second.src_spin));}
+ printLaph("--------------------------------");
+}
 
 void PerambulatorHandler::outputSuffixMap()
 {
  check_info_set("getSuffixMap");
- map<int,PerambulatorHandler::FileKey> suffixmap=getSuffixMap();
- printLaph("\nSuffix map:");
- for (map<int,PerambulatorHandler::FileKey>::const_iterator it=suffixmap.begin();
-      it!=suffixmap.end();++it){
-    printLaph(make_strf("suffix  %d:  source time = %d  source spin = %d",
-               it->first,it->second.src_time,it->second.src_spin));}
- printLaph("\n");
+ if (mode!=ReadOnly){
+    if (DHputPtr)                          printSuffixMap("STANDARD",DHputPtr->getSuffixMap());
+    if (DHputPtrSparseGrid)                printSuffixMap("LEFT_SPARSE_GRID",DHputPtrSparseGrid->getSuffixMap());
+    if (DHputPtrSummedInsertion)           printSuffixMap("SUMMED_INSERTION",DHputPtrSummedInsertion->getSuffixMap());
+    if (DHputPtrLeftInsertion)             printSuffixMap("LEFT_INSERTION",DHputPtrLeftInsertion->getSuffixMap());
+    if (DHputPtrRightInsertion)            printSuffixMap("RIGHT_INSERTION",DHputPtrRightInsertion->getSuffixMap());
+    if (DHputPtrSparseGridSummedInsertion) printSuffixMap("LEFT_SPARSE_GRID_SUMMED_INSERTION",DHputPtrSparseGridSummedInsertion->getSuffixMap());
+    if (DHputPtrSparseGridRightInsertion)  printSuffixMap("LEFT_SPARSE_GRID_RIGHT_INSERTION",DHputPtrSparseGridRightInsertion->getSuffixMap());}
+ else {
+    if (DHgetPtr)                          printSuffixMap("STANDARD",DHgetPtr->getSuffixMap());
+    if (DHgetPtrSparseGrid)                printSuffixMap("LEFT_SPARSE_GRID",DHgetPtrSparseGrid->getSuffixMap());
+    if (DHgetPtrSummedInsertion)           printSuffixMap("SUMMED_INSERTION",DHgetPtrSummedInsertion->getSuffixMap());
+    if (DHgetPtrLeftInsertion)             printSuffixMap("LEFT_INSERTION",DHgetPtrLeftInsertion->getSuffixMap());
+    if (DHgetPtrRightInsertion)            printSuffixMap("RIGHT_INSERTION",DHgetPtrRightInsertion->getSuffixMap());
+    if (DHgetPtrSparseGridSummedInsertion) printSuffixMap("LEFT_SPARSE_GRID_SUMMED_INSERTION",DHgetPtrSparseGridSummedInsertion->getSuffixMap());
+    if (DHgetPtrSparseGridRightInsertion)  printSuffixMap("LEFT_SPARSE_GRID_RIGHT_INSERTION",DHgetPtrSparseGridRightInsertion->getSuffixMap());}
 }
 
 
-void PerambulatorHandler::outputSuffixMap(XMLHandler& xmlout)
+map<int,PerambulatorHandler::FileKey> PerambulatorHandler::getSuffixMap(PerambulatorType ptype) const
 {
  check_info_set("getSuffixMap");
- map<int,PerambulatorHandler::FileKey> suffixmap=getSuffixMap();
- xmlout.set_root("SuffixMap");
+ switch (ptype){
+    case PERAMBULATOR_STANDARD:
+       if (DHputPtr) return DHputPtr->getSuffixMap();
+       if (DHgetPtr) return DHgetPtr->getSuffixMap();
+       break;
+    case PERAMBULATOR_LEFT_SPARSE_GRID:
+       if (DHputPtrSparseGrid) return DHputPtrSparseGrid->getSuffixMap();
+       if (DHgetPtrSparseGrid) return DHgetPtrSparseGrid->getSuffixMap();
+       break;
+    case PERAMBULATOR_SUMMED_INSERTION:
+       if (DHputPtrSummedInsertion) return DHputPtrSummedInsertion->getSuffixMap();
+       if (DHgetPtrSummedInsertion) return DHgetPtrSummedInsertion->getSuffixMap();
+       break;
+    case PERAMBULATOR_LEFT_INSERTION:
+       if (DHputPtrLeftInsertion) return DHputPtrLeftInsertion->getSuffixMap();
+       if (DHgetPtrLeftInsertion) return DHgetPtrLeftInsertion->getSuffixMap();
+       break;
+    case PERAMBULATOR_RIGHT_INSERTION:
+       if (DHputPtrRightInsertion) return DHputPtrRightInsertion->getSuffixMap();
+       if (DHgetPtrRightInsertion) return DHgetPtrRightInsertion->getSuffixMap();
+       break;
+    case PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION:
+       if (DHputPtrSparseGridSummedInsertion) return DHputPtrSparseGridSummedInsertion->getSuffixMap();
+       if (DHgetPtrSparseGridSummedInsertion) return DHgetPtrSparseGridSummedInsertion->getSuffixMap();
+       break;
+    case PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION:
+       if (DHputPtrSparseGridRightInsertion) return DHputPtrSparseGridRightInsertion->getSuffixMap();
+       if (DHgetPtrSparseGridRightInsertion) return DHgetPtrSparseGridRightInsertion->getSuffixMap();
+       break;
+    default: break;}
+ errorLaph("getSuffixMap: requested perambulator type is not available in this handler");
+ return map<int,FileKey>();
+}
+
+void PerambulatorHandler::outputSuffixMap(XMLHandler& xmlout, PerambulatorHandler::PerambulatorType ptype)
+{
+ check_info_set("getSuffixMap");
+ map<int,PerambulatorHandler::FileKey> suffixmap=getSuffixMap(ptype);
+ xmlout.set_root("SuffixMap",make_string(int(ptype)));
  for (map<int,PerambulatorHandler::FileKey>::const_iterator it=suffixmap.begin();
       it!=suffixmap.end();++it){
     XMLHandler xmltmp;
@@ -1028,16 +1112,23 @@ void PerambulatorHandler::computePerambulators(bool extra_soln_check, bool print
     evList[n] = (void*)(laphevs[n].getDataConstPtr());}
  rolex.stop();
  double evreadtime=rolex.getTimeInSeconds();
- printLaph(make_str("All Laph eigvecs read in ",evreadtime," seconds\n"));
+ printLaph(make_str("\nAll Laph eigvecs read in ",evreadtime," seconds\n"));
  rolex.reset(); rolex.start();
- vector<LattField> scaled_evs(laphevs);
- vector<void*> evList_scaled(nEigs);
- for (int n=0;n<nEigs;n++){
-    if (insHandler) { 
-    	PerambulatorHandler::scale_by_ins_times_coord(scaled_evs[n],insHandler->getInsertion().getTwistVector());
-    } else if (sginsHandler) {
-	PerambulatorHandler::scale_by_ins_times_coord(scaled_evs[n],sginsHandler->getInsertion().getTwistVector());}
-    evList_scaled[n]=(void*)(scaled_evs[n].getDataConstPtr());}
+ vector<LattField> scaled_evs;
+ vector<void*> evList_scaled(nEigs,nullptr);
+ const bool need_scaled =
+       (pmapPtr->count(PERAMBULATOR_RIGHT_INSERTION)==1)
+    || (pmapPtr->count(PERAMBULATOR_LEFT_INSERTION)==1)
+    || (pmapPtr->count(PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION)==1);
+ if (need_scaled){
+    const InsertionInfo* ins = insHandler ? &insHandler->getInsertion()
+                             : sginsHandler ? &sginsHandler->getInsertion() : nullptr;
+    if (!ins) errorLaph("Scaled eigenvectors requested but no InsertionInfo is set");
+    const std::vector<int> twist = ins->getTwistVector();
+    scaled_evs = laphevs;                       // deep copy
+    for (int n=0;n<nEigs;n++){
+       scale_by_ins_times_coord(scaled_evs[n],twist);
+       evList_scaled[n]=(void*)(scaled_evs[n].getDataConstPtr());}}
  rolex.stop();
  double evscaledreadtime=rolex.getTimeInSeconds();
  printLaph(make_str("All rescaled Laph eigvecs read in ",evscaledreadtime," seconds\n"));
@@ -1049,7 +1140,7 @@ void PerambulatorHandler::computePerambulators(bool extra_soln_check, bool print
  rolex.stop();
  precondtime=rolex.getTimeInSeconds();
  if (precond){
-    printLaph(make_str(" Time to set up inverter preconditioner was ",precondtime," seconds"));}
+    printLaph(make_str("Time to set up inverter preconditioner was ",precondtime," seconds"));}
  
     // set up Insertion QudaInversionParam
     if( insHandler ) { (insHandler->getInsertion()).setQudaInvertParam(quda_ins_param,*qactionPtr); }
@@ -1061,17 +1152,23 @@ void PerambulatorHandler::computePerambulators(bool extra_soln_check, bool print
  double writetime=0.0;
  int count=0;
  int ncomp=perambComps.computations.size();
-
+ double time_estimate=0.0;
  for (list<PerambComputation>::const_iterator it=perambComps.computations.begin();
       it!=perambComps.computations.end();count++,it++){
+    StopWatch casio; casio.start();
     printLaph("\n\n *************************************************************");
     printLaph(make_strf(" *\n *  Now starting computation %d (with %d as last):",
                count,ncomp-1));
     printLaph(" *");
+    if (count!=0){
+    printLaph(make_strf(" *  Total estimated time remaining: %f minutes.",time_estimate));
+    printLaph(" *");}
     printLaph(" *************************************************************");
 
     computePerambulators(it->src_time,it->tmin,it->tmax,it->src_lapheigvec_indices,evList,evList_scaled,print_coeffs,extra_soln_check,
                          report_gflops,srctime,invtime,suminstime,evprojtime,writetime,perambComps.useMultiSrcInverter);
+    casio.stop();
+    time_estimate=casio.getTimeInSeconds()*(ncomp-1-count)/60.0;
     }
 
  totaltime.stop();
@@ -1118,6 +1215,7 @@ void PerambulatorHandler::computePerambulatorsMS(int src_time, int tmin, int tma
                                                  double& makesrc_time, double& inv_time, double& sumins_time,
                                                  double& evproj_time, double& write_time)
 {
+ PerambulatorHandler::checkAllocated();
  StopWatch bulova; bulova.start();
  printLaph("\nQuark perambulator computation for one source time,");
  printLaph(" one set of source eigvec indices beginning");
@@ -1190,28 +1288,33 @@ void PerambulatorHandler::computePerambulatorsMS(int src_time, int tmin, int tma
 
     int srcev_ind=*vt;
     printLaph(make_strf("\nStarting source number %d (with %d as last) with source spin %d",invcount,ninv-1,srcspin));
-    bool doneflag=true;
-    for (int sink_time=0;sink_time<Textent;++sink_time){
-    for (int sinkspin=1;sinkspin<=int(Nspin);++sinkspin){
-       if (!DHputPtr->queryData(RecordKey(sinkspin,sink_time,srcev_ind))){
-          doneflag=false; sinkspin=Nspin+1; sink_time=Textent;}}}
+    
+    bool done_std      = recordsDone(DHputPtr,                          fPtr,                          Textent,srcev_ind, PERAMBULATOR_STANDARD);
+    bool done_sg       = recordsDone(DHputPtrSparseGrid,                fPtrSparseGrid,                Textent,srcev_ind, PERAMBULATOR_LEFT_SPARSE_GRID);
+    bool done_sins     = recordsDone(DHputPtrSummedInsertion,           fPtrSummedInsertion,           Textent,srcev_ind, PERAMBULATOR_SUMMED_INSERTION);
+    bool done_lins     = recordsDone(DHputPtrLeftInsertion,             fPtrLeftInsertion,             Textent,srcev_ind, PERAMBULATOR_LEFT_INSERTION);
+    bool done_rins     = recordsDone(DHputPtrRightInsertion,            fPtrRightInsertion,            Textent,srcev_ind, PERAMBULATOR_RIGHT_INSERTION);
+    bool done_sgsumins = recordsDone(DHputPtrSparseGridSummedInsertion, fPtrSparseGridSummedInsertion, Textent,srcev_ind, PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION);
+    bool done_sgrins   = recordsDone(DHputPtrSparseGridRightInsertion,  fPtrSparseGridRightInsertion,  Textent,srcev_ind, PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION);
+    
+    const bool all_done = done_std && done_sg && done_sins && done_lins && done_rins && done_sgsumins && done_sgrins;
 
-    if ((!fPtr->isModeOverwrite())&&(doneflag)){
-       printLaph("warning: these quark sinks already computed...");
+    if (all_done){
+       printLaph("  warning: these quark sinks already computed...");
        printLaph("  skip re-computing since fileMode not overwrite");}
     else{
         //  initialize source (include gamma_4) in Dirac-Pauli basis, allocate sink
        bulova.reset();bulova.start();
-       if  ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_RIGHT_INSERTION)==1){
+       if  (((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_RIGHT_INSERTION)==1)&&!done_rins){
             make_source(srcBatchData[iSinkBatch],evList_scaled[srcev_ind],src_time,srcspin);
-       } else if ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION)==1){
+       } else if (((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION)==1)&&!done_sgrins){
  	         make_source(srcBatchData[iSinkBatch],evList_scaled[srcev_ind],src_time,srcspin);
        } else {
             make_source(srcBatchData[iSinkBatch],evList[srcev_ind],src_time,srcspin);
        }
        bulova.stop();
        double addsrctime=bulova.getTimeInSeconds();
-       printLaph(make_str(" fermion source set up in Dirac-Pauli basis in ",addsrctime," seconds"));
+       printLaph(make_str("   Fermion source set up in Dirac-Pauli basis in ",addsrctime," seconds"));
        srctime+=addsrctime;
        sinkBatchInds[iSinkBatch] = srcev_ind;
        iSinkBatch++; }
@@ -1229,21 +1332,21 @@ void PerambulatorHandler::computePerambulatorsMS(int src_time, int tmin, int tma
        bulova.stop(); 
        double addinvtime=bulova.getTimeInSeconds();
        invtime+=addinvtime;
-       printLaph(make_strf("Inversions done:  number of iterations = %d",quda_inv_param.iter));
-       printLaph(make_str(" Time for ",nSinks," inversions was ",addinvtime," seconds"));
-       if (report_gflops) printLaph(make_strf("Multi-source inversion speed was %g gflops",quda_inv_param.gflops));
+       printLaph(make_strf(" * Inversions done:  number of iterations = %d",quda_inv_param.iter));
+       printLaph(make_str("   Time for ",nSinks," inversions was ",addinvtime," seconds"));
+       if (report_gflops) printLaph(make_strf("   Multi-source inversion speed was %g gflops",quda_inv_param.gflops));
        bool somefail=false;
 
        if (!((quda_inv_param.iter>0)&&(quda_inv_param.iter<int(invertPtr->getMaxIterations())))){
-          printLaph("\n\nSome inversions in this batch FAILED to converge before max iteration reached");
+          printLaph("\n\n   Some inversions in this batch FAILED to converge before max iteration reached");
           somefail=true;
-          printLaph("Some solution NOT WRITTEN to file\n\n");}
+          printLaph("   Some solution NOT WRITTEN to file\n\n");}
 
        int iSinkDone=0;
        for (int iSink=0;iSink<nSinks;++iSink){
-          printLaph(make_strf(" Residual for src %d = %g",iSink,quda_inv_param.true_res[iSink]));
+          printLaph(make_strf("   Residual for src %d = %g",iSink,quda_inv_param.true_res[iSink]));
           if ((somefail)&&(quda_inv_param.true_res[iSink]>quda_inv_param.tol)){
-             printLaph("    This inversion failed to reach required tolerance");}
+             printLaph("   This inversion failed to reach required tolerance");}
           else{
 
              sinkBatchDoneInds[iSinkDone]=sinkBatchInds[iSink];
@@ -1254,7 +1357,7 @@ void PerambulatorHandler::computePerambulatorsMS(int src_time, int tmin, int tma
              // additional checks of the solution
 
              if (extra_soln_check){
-                printLaph("Performing additional check on solution using quda::MatQuda");
+                printLaph("   Performing additional check on solution using quda::MatQuda");
                 LattField sol_check(FieldSiteType::ColorSpinVector);
                 void *sol_checkptr=sol_check.getDataPtr();
                 MatQuda(sol_checkptr,sinkList[iSink],&quda_inv_param);
@@ -1265,41 +1368,39 @@ void PerambulatorHandler::computePerambulatorsMS(int src_time, int tmin, int tma
 
        // carry out projections
        if (nSinks>0){
-
-	       bulova.reset(); bulova.start();
 	       int nSinksBatch=std::min(nSinks,int(nSinkQudaBatch));
 
 	       Array<dcmplx> qudaRes(Nspin, Textent, nEigs, nSinks);   // quda laph reversing major order
 	       __complex__ double* qudaResPtr = (__complex__ double*)(&qudaRes(0,0,0,0));
 
 	       // sparse grid output to file
-			 if ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID)==1) {
+			 if (((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID)==1)&&!done_sg) {
+		bulova.reset(); bulova.start();
                 gridProject (doneList, sinkBatchDoneInds, nSinks, minTime, maxTime, Textent, print_coeffs, DHputPtrSparseGrid);
 					 bulova.stop();
 					 double otime=bulova.getTimeInSeconds();
-					 printLaph(make_str(" Output of this batch to sparse grid file took ",otime," seconds"));
+					 printLaph(make_str(" * Output of this batch to sparse grid file took ",otime," seconds"));
 					 writetime+=otime;
-					 bulova.reset(); bulova.start();
 				 }
           // sparse grid right insertion output to file
-          if ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION)==1) {
+          if (((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION)==1)&&!done_sgrins) {
+		bulova.reset(); bulova.start();
                 gridProject (doneList, sinkBatchDoneInds, nSinks, minTime, maxTime, Textent, print_coeffs, DHputPtrSparseGridRightInsertion);
 					 bulova.stop();
 					 double otime=bulova.getTimeInSeconds();
-					 printLaph(make_str(" Output of this batch to sparse grid file took ",otime," seconds"));
+					 printLaph(make_str(" * Output of this batch to sparse grid file took ",otime," seconds"));
 					 writetime+=otime;
-					 bulova.reset(); bulova.start();
 				 }
           // left insertion output to file
-          if ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_INSERTION)==1) {
-	          printLaph("projecting batch of solutions onto insertion rescaled LapH eigenvectors");
-	          
-             laphSinkProject(qudaResPtr, done_sinks_ptr, nSinks, nSinksBatch, evs_scaled_ptr, nEigs, 
+          if (((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_INSERTION)==1)&&!done_lins) {
+	   	bulova.reset(); bulova.start();
+		printLaph(" * Projecting batch of solutions onto insertion rescaled LapH eigenvectors");  
+             	laphSinkProject(qudaResPtr, done_sinks_ptr, nSinks, nSinksBatch, evs_scaled_ptr, nEigs, 
 			          nEigQudaBatch, &quda_inv_param, LayoutInfo::getRankLattExtents().data());
 
 	          bulova.stop(); 
 	          double addevprojtime=bulova.getTimeInSeconds();
-	          printLaph(make_str(" this batch of projections onto Laph evs took ",addevprojtime," seconds"));
+	          printLaph(make_str("   this batch of projections onto Laph evs took ",addevprojtime," seconds"));
 	          evprojtime+=addevprojtime;
 
 	          // rearrange data then output to file
@@ -1313,24 +1414,25 @@ void PerambulatorHandler::computePerambulatorsMS(int src_time, int tmin, int tma
 			   		       quark_sink[iEv] = soln_rescale*qudaRes(iSpin, t, iEv, iSink);}
 		   		       DHputPtrLeftInsertion->putData(RecordKey(iSpin+1,t,sinkBatchDoneInds[iSink]),quark_sink);
 	   			       if (print_coeffs){
-		   			       printLaph(make_strf("srcev_index = %d, spin = %d, time = %d",sinkBatchDoneInds[iSink],iSpin+1,t));
+		   			       printLaph(make_strf("   srcev_index = %d, spin = %d, time = %d",sinkBatchDoneInds[iSink],iSpin+1,t));
 			   		       for (int n=0;n<nEigs;n++){
-				   		       printLaph(make_strf("coef for eigenlevel %d = (%14.8f, %14.8f)",
+				   		       printLaph(make_strf("   coef for eigenlevel %d = (%14.8f, %14.8f)",
 					   				       n,real(quark_sink[n]),imag(quark_sink[n])));}}}}}
 					          bulova.stop();
 					          double otime=bulova.getTimeInSeconds();
-					          printLaph(make_str(" Output of this batch to file took ",otime," seconds"));
+					          printLaph(make_str("   Output of this batch to file took ",otime," seconds"));
 					          writetime+=otime;
              }
 	       // do the Laph - projections and standard output
-          if ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_STANDARD)==1){
-	          printLaph("projecting batch of solutions onto LapH eigenvectors");
+          if (((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_STANDARD)==1)&&!done_std){
+		  bulova.reset(); bulova.start();
+	          printLaph(" * Projecting batch of solutions onto LapH eigenvectors");
 	          laphSinkProject(qudaResPtr, done_sinks_ptr, nSinks, nSinksBatch, evs_ptr, nEigs, 
 			          nEigQudaBatch, &quda_inv_param, LayoutInfo::getRankLattExtents().data());
 
 	          bulova.stop(); 
 	          double addevprojtime=bulova.getTimeInSeconds();
-	          printLaph(make_str(" this batch of projections onto Laph evs took ",addevprojtime," seconds"));
+	          printLaph(make_str("   this batch of projections onto Laph evs took ",addevprojtime," seconds"));
 	          evprojtime+=addevprojtime;
 
 	          // rearrange data then output to file
@@ -1344,24 +1446,25 @@ void PerambulatorHandler::computePerambulatorsMS(int src_time, int tmin, int tma
 			   		       quark_sink[iEv] = soln_rescale*qudaRes(iSpin, t, iEv, iSink);}
 		   		       DHputPtr->putData(RecordKey(iSpin+1,t,sinkBatchDoneInds[iSink]),quark_sink);
 	   			       if (print_coeffs){
-		   			       printLaph(make_strf("srcev_index = %d, spin = %d, time = %d",sinkBatchDoneInds[iSink],iSpin+1,t));
+		   			       printLaph(make_strf("   srcev_index = %d, spin = %d, time = %d",sinkBatchDoneInds[iSink],iSpin+1,t));
 			   		       for (int n=0;n<nEigs;n++){
-				   		       printLaph(make_strf("coef for eigenlevel %d = (%14.8f, %14.8f)",
+				   		       printLaph(make_strf("   coef for eigenlevel %d = (%14.8f, %14.8f)",
 					   				       n,real(quark_sink[n]),imag(quark_sink[n])));}}}}}
 					          bulova.stop();
 					          double otime=bulova.getTimeInSeconds();
-					          printLaph(make_str(" Output of this batch to file took ",otime," seconds"));
+					          printLaph(make_str("   Output of this batch to file took ",otime," seconds"));
 					          writetime+=otime;
              }
           // right insertion output to file
-          if ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_RIGHT_INSERTION)==1){
-	          printLaph("projecting batch of solutions onto LapH eigenvectors");
+          if (((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_RIGHT_INSERTION)==1)&&!done_rins){
+	          bulova.reset(); bulova.start();
+		  printLaph("   Projecting batch of solutions onto LapH eigenvectors");
 	          laphSinkProject(qudaResPtr, done_sinks_ptr, nSinks, nSinksBatch, evs_ptr, nEigs, 
 			          nEigQudaBatch, &quda_inv_param, LayoutInfo::getRankLattExtents().data());
 
 	          bulova.stop(); 
 	          double addevprojtime=bulova.getTimeInSeconds();
-	          printLaph(make_str(" this batch of projections onto Laph evs took ",addevprojtime," seconds"));
+	          printLaph(make_str("   this batch of projections onto Laph evs took ",addevprojtime," seconds"));
 	          evprojtime+=addevprojtime;
 
 	          // rearrange data then output to file
@@ -1375,20 +1478,21 @@ void PerambulatorHandler::computePerambulatorsMS(int src_time, int tmin, int tma
 			   		       quark_sink[iEv] = soln_rescale*qudaRes(iSpin, t, iEv, iSink);}
 		   		       DHputPtrRightInsertion->putData(RecordKey(iSpin+1,t,sinkBatchDoneInds[iSink]),quark_sink);
 	   			       if (print_coeffs){
-		   			       printLaph(make_strf("srcev_index = %d, spin = %d, time = %d",sinkBatchDoneInds[iSink],iSpin+1,t));
+		   			       printLaph(make_strf("   srcev_index = %d, spin = %d, time = %d",sinkBatchDoneInds[iSink],iSpin+1,t));
 			   		       for (int n=0;n<nEigs;n++){
-				   		       printLaph(make_strf("coef for eigenlevel %d = (%14.8f, %14.8f)",
+				   		       printLaph(make_strf("   coef for eigenlevel %d = (%14.8f, %14.8f)",
 					   				       n,real(quark_sink[n]),imag(quark_sink[n])));}}}}}
 					          bulova.stop();
 					          double otime=bulova.getTimeInSeconds();
-					          printLaph(make_str(" Output of this batch to file took ",otime," seconds"));
+					          printLaph(make_str("   Output of this batch to file took ",otime," seconds"));
 					          writetime+=otime;
              }
 
              // carry out summed insertion 
-          if (((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_SUMMED_INSERTION)==1)||
-              ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION)==1)) {
+          if ((((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_SUMMED_INSERTION)==1)&&!done_sins)||
+              (((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION)==1)&&!done_sgsumins)) {
              bulova.reset(); bulova.start();
+	     printLaph(" * Performing summed insertions"); 
              for (int iSink=0; iSink<nSinks; ++iSink){
                 // applyInsertion(srcBatchData[iSink],sinkBatchData[sinkBatchIndsMap[iSink]]); // Insertion-Multiplication is performed on CPU
 		          MatQuda(srcList[iSink],doneList[iSink],&quda_ins_param);
@@ -1396,7 +1500,7 @@ void PerambulatorHandler::computePerambulatorsMS(int src_time, int tmin, int tma
              bulova.stop(); 
              double addsuminstime=bulova.getTimeInSeconds();
              suminstime+=addsuminstime;
-             printLaph(make_str(" Time for ",nSinks," insertions was ",addsuminstime," seconds"));
+             printLaph(make_str("   Time for ",nSinks," summed insertions was ",addsuminstime," seconds"));
              bulova.reset(); bulova.start();
             
              // carry out second inversion 
@@ -1406,21 +1510,21 @@ void PerambulatorHandler::computePerambulatorsMS(int src_time, int tmin, int tma
              bulova.stop(); 
              double addinvtime=bulova.getTimeInSeconds();
              invtime+=addinvtime;
-             printLaph(make_strf("Inversions done:  number of iterations = %d",quda_inv_param.iter));
-             printLaph(make_str(" Time for ",nSinks," inversions was ",addinvtime," seconds"));
-             if (report_gflops) printLaph(make_strf("Multi-source inversion speed was %g gflops",quda_inv_param.gflops));
+             printLaph(make_strf(" * Inversions done:  number of iterations = %d",quda_inv_param.iter));
+             printLaph(make_str("   Time for ",nSinks," inversions was ",addinvtime," seconds"));
+             if (report_gflops) printLaph(make_strf("   Multi-source inversion speed was %g gflops",quda_inv_param.gflops));
              bool somefail=false;
 
              if (!((quda_inv_param.iter>0)&&(quda_inv_param.iter<int(invertPtr->getMaxIterations())))){
-                printLaph("\n\nSome inversions in this batch FAILED to converge before max iteration reached");
+                printLaph("\n\n   Some inversions in this batch FAILED to converge before max iteration reached");
                 somefail=true; 
-                printLaph("Some solution NOT WRITTEN to file\n\n");}
+                printLaph("   Some solution NOT WRITTEN to file\n\n");}
 
              int iSinkDone=0;
              for (int iSink=0;iSink<nSinks;++iSink){
-                printLaph(make_strf(" Residual for src %d = %g",iSink,quda_inv_param.true_res[iSink]));
+                printLaph(make_strf("   Residual for src %d = %g",iSink,quda_inv_param.true_res[iSink]));
                 if ((somefail)&&(quda_inv_param.true_res[iSink]>quda_inv_param.tol)){
-                   printLaph("    This inversion failed to reach required tolerance");}
+                   printLaph("   This inversion failed to reach required tolerance");}
                 else{
 
                    sinkBatchDoneInds[iSinkDone]=sinkBatchInds[iSink];
@@ -1430,7 +1534,7 @@ void PerambulatorHandler::computePerambulatorsMS(int src_time, int tmin, int tma
                // additional checks of the solution
 
                    if (extra_soln_check){
-                      printLaph("Performing additional check on solution using quda::MatQuda");
+                      printLaph("   Performing additional check on solution using quda::MatQuda");
                       LattField sol_check(FieldSiteType::ColorSpinVector);
                       void *sol_checkptr=sol_check.getDataPtr();
                       MatQuda(sol_checkptr,sinkList[iSink],&quda_inv_param);
@@ -1440,28 +1544,28 @@ void PerambulatorHandler::computePerambulatorsMS(int src_time, int tmin, int tma
             
              if (nSinks>0){
 
-                bulova.reset(); bulova.start();
                 int nSinksBatch=std::min(nSinks,int(nSinkQudaBatch));
 
                // sparse grid summed insertion output to file
-                if ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION)==1) {
-                   gridProject (doneList, sinkBatchDoneInds, nSinks, minTime, maxTime, Textent, print_coeffs, DHputPtrSparseGridSummedInsertion);
+                if (((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION)==1)&&!done_sgsumins) {
+                   	bulova.reset(); bulova.start();
+			gridProject (doneList, sinkBatchDoneInds, nSinks, minTime, maxTime, Textent, print_coeffs, DHputPtrSparseGridSummedInsertion);
 					    bulova.stop();
 					    double otime=bulova.getTimeInSeconds();
-					    printLaph(make_str(" Output of this batch to sparse grid insertion file took ",otime," seconds"));
+					    printLaph(make_str("   Output of this batch to sparse grid insertion file took ",otime," seconds"));
 					    writetime+=otime;
-					    bulova.reset(); bulova.start();
 				       } // end sparse grid summed insertion output to file 
 
                 // do Laph - projections and summed insertion output to file
-                if ((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_SUMMED_INSERTION)==1) {
-                   printLaph("projecting batch of insertion solutions onto LapH eigenvectors");
+                if (((*pmapPtr).count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_SUMMED_INSERTION)==1)&&!done_sins) {
+		   bulova.reset(); bulova.start();
+                   printLaph(" * Projecting batch of insertion solutions onto LapH eigenvectors");
                    laphSinkProject(qudaResPtr, done_sinks_ptr, nSinks, nSinksBatch, evs_ptr, nEigs, 
                          nEigQudaBatch, &quda_inv_param, LayoutInfo::getRankLattExtents().data());
  
                    bulova.stop(); 
                    double addevprojtime=bulova.getTimeInSeconds();
-                   printLaph(make_str(" this batch of projections onto Laph evs took ",addevprojtime," seconds"));
+                   printLaph(make_str("   this batch of projections onto Laph evs took ",addevprojtime," seconds"));
                    evprojtime+=addevprojtime;
  
                    // rearrange data then output to file
@@ -1475,13 +1579,13 @@ void PerambulatorHandler::computePerambulatorsMS(int src_time, int tmin, int tma
                                quark_sink[iEv] = soln_rescale*qudaRes(iSpin, t, iEv, iSink);}
                             DHputPtrSummedInsertion->putData(RecordKey(iSpin+1,t,sinkBatchDoneInds[iSink]),quark_sink);
                             if (print_coeffs){
-                               printLaph(make_strf("srcev_index = %d, spin = %d, time = %d",sinkBatchDoneInds[iSink],iSpin+1,t));
+                               printLaph(make_strf("   srcev_index = %d, spin = %d, time = %d",sinkBatchDoneInds[iSink],iSpin+1,t));
                                for (int n=0;n<nEigs;n++){
-                                  printLaph(make_strf("coef for eigenlevel %d = (%14.8f, %14.8f)",
+                                  printLaph(make_strf("   coef for eigenlevel %d = (%14.8f, %14.8f)",
                                            n,real(quark_sink[n]),imag(quark_sink[n])));}}}}}
                                bulova.stop();
                                double otime=bulova.getTimeInSeconds();
-                               printLaph(make_str(" Output of this batch to file took ",otime," seconds"));
+                               printLaph(make_str("   Output of this batch to file took ",otime," seconds"));
                                writetime+=otime;
                    } // end summed insertion projection output to file
              } // n_Sinks after second inversion > 0
@@ -1515,6 +1619,7 @@ void PerambulatorHandler::computePerambulatorsSS(int src_time, int tmin, int tma
                                                  double& makesrc_time, double& inv_time, double& ins_time,
                                                  double& evproj_time, double& write_time)
 {
+ PerambulatorHandler::checkAllocated();
  StopWatch bulova; bulova.start();
  printLaph("\nQuark perambulator computation for one source time,");
  printLaph(" one set of source eigvec indices beginning");
@@ -1803,7 +1908,7 @@ void PerambulatorHandler::computePerambulatorsSS(int src_time, int tmin, int tma
 void PerambulatorHandler::make_source(LattField& ferm_src, const void* ev_src_ptr, 
 		int src_time, int src_spin)
 {
-	printLaph(" Making source for this inversion...");
+	printLaph(" * Making source for this inversion...");
 	ferm_src.reset(FieldSiteType::ColorSpinVector);
 	bool dp=(ferm_src.bytesPerWord()==sizeof(std::complex<double>));
 	// initialize source field to zero
@@ -1866,7 +1971,7 @@ void PerambulatorHandler::make_source(LattField& ferm_src, const void* ev_src_pt
           cblas_caxpy(n1,(fcmplx*)(zrho),(fcmplx*)(x1),incx,(fcmplx*)(y1),incy);
           cblas_caxpy(n2,(fcmplx*)(zrho),(fcmplx*)(x2),incx,(fcmplx*)(y2),incy);}
        x1+=cbytes; y1+=cbytes; x2+=cbytes; y2+=cbytes;}}
- printLaph("Source for this inversion created");
+ printLaph("   Source for this inversion created");
 }
 
 template <typename T>   // T = double or float
@@ -1908,7 +2013,7 @@ void PerambulatorHandler::gridProject (const vector<void*>& _doneList, const vec
  int nColor = 3; 
  int nGridPoints = sgHandler->getGrid().getNGridPoints(); // not necessary to implement sginsHandler version, since the are based on the same RandomSparseGridInfo
  vector<vector<int>> offsets; sgHandler->getGrid().generateOffsets(offsets); 
- printLaph(" Outputting to sparse grid file"); 
+ printLaph("   Outputting to sparse grid file"); 
  for (int iSink=0; iSink<_nSinks; ++iSink) {
 	 const char* field_start=reinterpret_cast<char*>(_doneList[iSink]);
 	 size_t site_bytes=2*sizeof(double)*12;
@@ -1943,6 +2048,20 @@ void PerambulatorHandler::gridProject (const vector<void*>& _doneList, const vec
 		 }
 	 }
  }
+}
+
+template <typename H>
+bool PerambulatorHandler::recordsDone(
+        DataPutHandlerMF<H,FileKey,RecordKey,DataType>* dh,
+        const FileListInfo* fl, int Textent, int srcev_ind, PerambulatorType ptype)
+{
+ if (dh==0) return true;                    // type not requested: nothing to do
+ if (fl->isModeOverwrite()) return false;   // overwrite mode: always recompute
+ for (int t=0;t<Textent;++t)
+ for (int s=1;s<=int(Nspin);++s){
+    if (!dh->queryData(RecordKey(s,t,srcev_ind))) return false;}
+ printLaph(toString(ptype) + " already computed");
+ return true;
 }
 
 const PerambulatorHandler::DataType& PerambulatorHandler::getData(
@@ -2868,7 +2987,6 @@ void PerambulatorHandler::applyInsertion (LattField& outfield, const LattField& 
         const std::vector<LattField>& gauge_field=gaugeHandler->getData();
 	std::string insert_info = (insHandler->getInsertion()).getInsertionName();
 	if(insert_info=="WilsonCloverTwist"){
-	    LaphEnv::applyWilsonCloverTwist(outfield, infield, gauge_field, *uPtr, *qactionPtr, insHandler->getInsertion());
 	}else if (insert_info=="IsospinMassSplitting"){
             LaphEnv::applyIsospinMassSplitting(outfield, infield);
         }else {
