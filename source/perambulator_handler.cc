@@ -414,21 +414,21 @@ void PerambulatorHandler::set_info(const GaugeConfigurationInfo& gaugeinfo,
        fPtrSparseGridSummedInsertion = new FileListInfo( pmap.at(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_SUMMED_INSERTION) );
 	    if ((mode==Compute)||(mode==Merge)){
 			 DHputPtrSparseGridSummedInsertion=new DataPutHandlerMF<SparseGridInsertionHandler,FileKey,RecordKey,DataType>(
-                       *sginsHandler,*fPtrSparseGridSummedInsertion,"Laph--SparseGridQuarkPeramb","PerambulatorHandlerSparseGridDataFile");}
+                       *sginsHandler,*fPtrSparseGridSummedInsertion,"Laph--SGInsQuarkPeramb","PerambulatorHandlerSparseGridDataFile");}
        if ((mode==ReadOnly)||(mode==Check)){
           bool globalmode=(mode==ReadOnly); 
           DHgetPtrSparseGridSummedInsertion=new DataGetHandlerMF<SparseGridInsertionHandler,FileKey,RecordKey,DataType>(
-                       *sginsHandler,*fPtrSparseGridSummedInsertion,"Laph--SparseGridQuarkPeramb","PerambulatorHandlerSparseGridDataFile",globalmode);}
+                       *sginsHandler,*fPtrSparseGridSummedInsertion,"Laph--SGInsQuarkPeramb","PerambulatorHandlerSparseGridDataFile",globalmode);}
        }
 	 if ( pmap.count(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION)==1){
        fPtrSparseGridRightInsertion = new FileListInfo( pmap.at(PerambulatorHandler::PerambulatorType::PERAMBULATOR_LEFT_SPARSE_GRID_RIGHT_INSERTION) );
 	    if ((mode==Compute)||(mode==Merge)){
 			 DHputPtrSparseGridRightInsertion=new DataPutHandlerMF<SparseGridInsertionHandler,FileKey,RecordKey,DataType>(
-                       *sginsHandler,*fPtrSparseGridRightInsertion,"Laph--SparseGridQuarkPeramb","PerambulatorHandlerSparseGridDataFile");}
+                       *sginsHandler,*fPtrSparseGridRightInsertion,"Laph--SGInsQuarkPeramb","PerambulatorHandlerSparseGridDataFile");}
        if ((mode==ReadOnly)||(mode==Check)){
           bool globalmode=(mode==ReadOnly); 
           DHgetPtrSparseGridRightInsertion=new DataGetHandlerMF<SparseGridInsertionHandler,FileKey,RecordKey,DataType>(
-                       *sginsHandler,*fPtrSparseGridRightInsertion,"Laph--SparseGridQuarkPeramb","PerambulatorHandlerSparseGridDataFile",globalmode);}
+                       *sginsHandler,*fPtrSparseGridRightInsertion,"Laph--SGInsQuarkPeramb","PerambulatorHandlerSparseGridDataFile",globalmode);}
        }
  }
  catch(const std::exception& xp){
